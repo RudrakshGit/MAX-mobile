@@ -87,6 +87,15 @@ cd android && EXPO_PUBLIC_API_URL=https://<your-url> ./gradlew assembleRelease
 
 The APK lands in `android/app/build/outputs/apk/release/app-release.apk`. It is signed with a debug key: fine for sharing, not for the Play Store.
 
+That APK carries both ARM architectures. To halve the download, build one per architecture and share the right one:
+
+```bash
+./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a     # almost every phone from 2019 on
+./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a   # older 32-bit budget phones
+```
+
+Not sure which a phone needs? Install the arm64 one; if Android says the app isn't compatible, use the armeabi-v7a one.
+
 Without `EXPO_PUBLIC_API_URL` the APK still works, but chat says it isn't connected.
 
 ## 6. Installing the APK on a phone
