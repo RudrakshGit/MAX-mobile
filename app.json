@@ -49,6 +49,13 @@
     ],
     "experiments": {
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cde1f24a-59eb-49f3-ae67-5145cc3f3542"
+      }
+    },
+    "owner": "max-major-project"
   }
 }

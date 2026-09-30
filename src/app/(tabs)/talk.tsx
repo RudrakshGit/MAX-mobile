@@ -1,7 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { askCompanion } from "@/lib/api";
 import { getState, newId, update, useStore, type Msg } from "@/lib/store";
 import { radius, space, useTheme } from "@/lib/theme";
@@ -81,28 +81,36 @@ export default function Talk() {
       <View style={{ paddingHorizontal: space.md, marginTop: -space.sm, marginBottom: space.sm }}>
         <T v="small" soft>AI companion · not a counsellor · can't handle emergencies</T>
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
-        <FlatList
-          ref={list}
-          inverted
-          data={reversed}
-          keyExtractor={(m) => m.id}
-          contentContainerStyle={{ padding: space.md, gap: space.md, flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={busy ? <Typing /> : null}
-          ListEmptyComponent={<Welcome name={companion} onPick={send} />}
-          renderItem={({ item, index }) => (
-            <Bubble
-              m={item}
-              latest={index === 0}
-              heavy={heavy}
-              onRetry={() => {
-                const lastUser = [...messages].reverse().find((m) => m.role === "user");
-                if (lastUser) send(lastUser.text, true);
-              }}
-            />
-          )}
-        />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
+        {messages.length === 0 ? (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: space.md, gap: space.md, flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled">
+            <Welcome name={companion} onPick={send} />
+          </ScrollView>
+        ) : (
+          <FlatList
+            ref={list}
+            inverted
+            data={reversed}
+            keyExtractor={(m) => m.id}
+            contentContainerStyle={{ padding: space.md, gap: space.md }}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={busy ? <Typing /> : null}
+            renderItem={({ item, index }) => (
+              <Bubble
+                m={item}
+                latest={index === 0}
+                heavy={heavy}
+                onRetry={() => {
+                  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+                  if (lastUser) send(lastUser.text, true);
+                }}
+              />
+            )}
+          />
+        )}
         <View style={{ flexDirection: "row", gap: space.sm, padding: space.sm, paddingHorizontal: space.md, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
           <TextInput
             value={text}
@@ -190,8 +198,7 @@ function Typing() {
 
 function Welcome({ name, onPick }: { name: string; onPick: (s: string) => void }) {
   return (
-    // The list is inverted, so flip the empty state back upright.
-    <View style={{ transform: [{ scaleY: -1 }], gap: space.lg, paddingTop: space.md }}>
+    <View style={{ gap: space.lg, paddingTop: space.md }}>
       <T v="voice">{`Hi, I'm ${name}. I'm here to listen and help you think things through, at any hour. What's on your mind?`}</T>
       <View style={{ gap: space.sm }}>
         {starters.map((s) => (
