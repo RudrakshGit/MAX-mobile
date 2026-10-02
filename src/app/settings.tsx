@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Alert, AppState, Share, View } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import { hasUsageAccess, openUsageSettings, usageSupported } from "@/lib/device-usage";
-import { applyReminders } from "@/lib/reminders";
+import Constants from "expo-constants";
+import { applyReminders, cancelReminders } from "@/lib/reminders";
 import { getState, resetAll, update, useStore } from "@/lib/store";
 import { space, useTheme } from "@/lib/theme";
 import { Button, Choice, Field, Page, Section, T } from "@/lib/ui";
@@ -49,8 +50,9 @@ export default function Settings() {
       {
         text: "Delete everything",
         style: "destructive",
-        onPress: () => {
-          resetAll();
+        onPress: async () => {
+          await cancelReminders();
+          await resetAll();
           router.replace("/onboarding");
         },
       },
@@ -124,6 +126,9 @@ export default function Settings() {
           <Button kind="danger" icon="trash-2" label="Delete everything" onPress={wipe} />
         </View>
       </Section>
+      <T v="small" soft style={{ marginTop: space.xl, textAlign: "center" }}>
+        {`MAX ${Constants.expoConfig?.version ?? ""} · build ${Constants.expoConfig?.android?.versionCode ?? ""}`}
+      </T>
     </Page>
   );
 }

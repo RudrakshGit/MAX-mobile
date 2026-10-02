@@ -2,7 +2,7 @@
   "expo": {
     "name": "MAX",
     "slug": "max-companion",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "max",
@@ -15,13 +15,28 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 2,
+      "allowBackup": false
     },
     "web": {
       "output": "server"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#25594C"
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false
+        }
+      ],
       [
         "expo-splash-screen",
         {

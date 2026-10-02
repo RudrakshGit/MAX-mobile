@@ -40,7 +40,7 @@ export default function Onboarding() {
           <>
             <T v="display">Name your companion.</T>
             <T soft>Call it anything you like. You can change it later in Settings.</T>
-            <Field value={name} onChangeText={setName} maxLength={20} autoFocus placeholder="Max" accessibilityLabel="Companion name" />
+            <Field value={name} onChangeText={setName} maxLength={20} placeholder="Max" accessibilityLabel="Companion name" />
             <Button label="Continue" onPress={() => setStep(2)} disabled={!clean} />
           </>
         )}

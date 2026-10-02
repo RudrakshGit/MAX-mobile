@@ -48,9 +48,13 @@ export default function Insights() {
     <Screen title="Insights">
       <T soft style={{ marginTop: -space.sm }}>Your check-ins on one timeline, so you can see how they move together.</T>
 
-      <View style={{ marginTop: space.lg, gap: space.md }}>
+      <View style={{ marginTop: space.lg, padding: space.md, borderRadius: radius.lg, backgroundColor: t.paper, borderWidth: 1, borderColor: t.line, gap: space.md }}>
         <Choice options={[{ label: "2 weeks", value: 14 }, { label: "4 weeks", value: 28 }]} value={range} onChange={setRange} />
-        <Chart checkins={checkins} days={range} on={on} t={t} />
+        {checkins.length ? (
+          <Chart checkins={checkins} days={range} on={on} t={t} />
+        ) : (
+          <T soft>Your timeline appears here after your first check-in on the Today tab.</T>
+        )}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {series.map((s) => (
             <Legend key={s.key} color={t.series[s.key]} label={s.label} active={on[s.key]} onPress={() => setOn({ ...on, [s.key]: !on[s.key] })} />
@@ -127,16 +131,29 @@ function Legend({ color, label, active, onPress }: { color: string; label: strin
       accessibilityRole="switch"
       accessibilityState={{ checked: active }}
       onPress={onPress}
-      style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 40, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: active ? color : t.line, backgroundColor: t.paper }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: active ? color : "transparent", borderWidth: 2, borderColor: color }} />
-      <T v="small" soft={!active}>{label}</T>
+      style={({ pressed }) => [
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.sm,
+          minHeight: 38,
+          paddingHorizontal: 12,
+          borderRadius: radius.pill,
+          borderWidth: 1,
+          borderColor: active ? color : t.line,
+          backgroundColor: active ? (t.bg) : t.paper,
+          opacity: pressed ? 0.75 : 1,
+        },
+      ]}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: active ? color : "transparent", borderWidth: 2, borderColor: color }} />
+      <T v="small" style={{ fontWeight: active ? "600" : "400" }} soft={!active}>{label}</T>
     </Pressable>
   );
 }
 
 function Chart({ checkins, days, on, t }: { checkins: CheckIn[]; days: number; on: Record<Key, boolean>; t: Theme }) {
   const { width: screenW } = useWindowDimensions();
-  const w = screenW - space.md * 2;
+  const w = Math.max(screenW - space.md * 4, 280);
   const h = 180;
   const pad = 10;
   const dates = lastDays(days);

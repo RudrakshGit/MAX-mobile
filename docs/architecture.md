@@ -50,7 +50,13 @@ There is no login. The phone is the database; the server keeps nothing except th
 
 ## Data on the phone
 
-One JSON blob under `max.v1` in AsyncStorage: settings, check-ins, journal entries, chat messages (last 300), check-up results, reframes and if-then plans. `update()` writes it through; `useStore(select)` reads it with `useSyncExternalStore`. Export shares the blob; delete removes it.
+One versioned envelope, `{ version, state }`, under `max.state` in AsyncStorage: settings, check-ins, journal entries, chat messages (last 300), check-up results, reframes and if-then plans. `update()` writes it through a single queue so writes can't land out of order; `useStore(select)` reads it with `useSyncExternalStore`.
+
+Reading is defensive (`src/lib/schema.ts`, tested in `schema.test.ts`): every field is validated and bad rows are dropped, so a new build can open an old install's data. The previous build's bare `max.v1` blob is migrated once. A blob that can't be read, or that a newer build wrote, is kept under `max.corrupt` instead of being overwritten. Bump `SCHEMA_VERSION` when the shape changes and add a migration step in `parse()`.
+
+`android:allowBackup` is off, so Google's cloud backup can't restore a previous install's data after a reinstall. Updating the APK in place keeps the data (that is what an update should do); a clean slate is Settings → Delete everything, or uninstall. Settings shows the build number at the bottom so you can tell which build is running.
+
+Export shares the state; delete wipes storage and cancels scheduled reminders.
 
 ## What the model is told
 

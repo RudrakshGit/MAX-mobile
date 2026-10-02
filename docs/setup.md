@@ -96,7 +96,7 @@ That APK carries both ARM architectures. To halve the download, build one per ar
 
 Not sure which a phone needs? Install the arm64 one; if Android says the app isn't compatible, use the armeabi-v7a one.
 
-Without `EXPO_PUBLIC_API_URL` the APK still works, but chat says it isn't connected.
+Without `EXPO_PUBLIC_API_URL` the APK still works, but chat says it isn't connected. Bump `version` and `android.versionCode` in `app.json` for every APK you hand out, so the Settings footer shows which build someone is running.
 
 ## 6. Installing the APK on a phone
 

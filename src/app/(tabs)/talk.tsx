@@ -1,7 +1,8 @@
 import Feather from "@expo/vector-icons/Feather";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, TextInput, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { askCompanion } from "@/lib/api";
 import { getState, newId, update, useStore, type Msg } from "@/lib/store";
 import { radius, space, useTheme } from "@/lib/theme";
@@ -20,10 +21,10 @@ export default function Talk() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const list = useRef<FlatList<Msg>>(null);
-  const { draft } = useLocalSearchParams<{ draft?: string }>();
+  const { draft, n } = useLocalSearchParams<{ draft?: string; n?: string }>();
   useEffect(() => {
     if (draft) setText(draft);
-  }, [draft]);
+  }, [draft, n]);
 
   // Three heavy replies in the last six turns: point towards a person, not just the app.
   const heavy = messages.slice(-12).filter((m) => m.kind === "distress").length >= 3;
@@ -81,7 +82,7 @@ export default function Talk() {
       <View style={{ paddingHorizontal: space.md, marginTop: -space.sm, marginBottom: space.sm }}>
         <T v="small" soft>AI companion · not a counsellor · can't handle emergencies</T>
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         {messages.length === 0 ? (
           <ScrollView
             style={{ flex: 1 }}
@@ -111,7 +112,7 @@ export default function Talk() {
             )}
           />
         )}
-        <View style={{ flexDirection: "row", gap: space.sm, padding: space.sm, paddingHorizontal: space.md, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
+        <View style={{ flexDirection: "row", gap: space.sm, padding: space.sm, paddingHorizontal: space.md, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.paper }}>
           <TextInput
             value={text}
             onChangeText={setText}
@@ -122,15 +123,17 @@ export default function Talk() {
             multiline
             maxLength={2000}
             accessibilityLabel={`Message ${companion}`}
-            style={{ flex: 1, maxHeight: 120, minHeight: 48, color: t.ink, backgroundColor: t.paper, borderColor: t.line, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 12, fontSize: 16 }}
+            style={{ flex: 1, maxHeight: 120, minHeight: 46, color: t.ink, backgroundColor: t.bg, borderColor: t.line, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: space.md, paddingVertical: 10, fontSize: 15 }}
           />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Send"
             disabled={!text.trim() || busy}
             onPress={() => send(text)}
-            style={{ width: 48, height: 48, alignSelf: "flex-end", borderRadius: radius.pill, backgroundColor: t.primary, alignItems: "center", justifyContent: "center", opacity: !text.trim() || busy ? 0.4 : 1 }}>
-            <Feather name="arrow-up" size={22} color={t.onPrimary} />
+            style={({ pressed }) => [
+              { width: 46, height: 46, alignSelf: "flex-end", borderRadius: radius.pill, backgroundColor: t.primary, alignItems: "center", justifyContent: "center", opacity: !text.trim() || busy ? 0.4 : pressed ? 0.8 : 1 }
+            ]}>
+            <Feather name="arrow-up" size={20} color={t.onPrimary} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -143,13 +146,13 @@ function Bubble({ m, latest, heavy, onRetry }: { m: Msg; latest: boolean; heavy:
   if (m.kind === "crisis") return <CrisisCard />;
   if (m.role === "user")
     return (
-      <View style={{ alignSelf: "flex-end", maxWidth: "85%", backgroundColor: t.userBubble, borderRadius: radius.md, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 }}>
+      <View style={{ alignSelf: "flex-end", maxWidth: "85%", backgroundColor: t.userBubble, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 16, paddingVertical: 12 }}>
         <T>{m.text}</T>
       </View>
     );
-  // The companion writes on the page itself, like a letter, not in a bubble.
+  // Soft, calming companion card
   return (
-    <View style={{ maxWidth: "92%", gap: space.sm }}>
+    <View style={{ alignSelf: "flex-start", maxWidth: "92%", backgroundColor: t.paper, borderRadius: radius.lg, borderTopLeftRadius: 4, borderWidth: 1, borderColor: t.line, padding: space.md, gap: space.sm }}>
       <T v="voice">{m.text}</T>
       {m.kind === "offline" && latest ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>

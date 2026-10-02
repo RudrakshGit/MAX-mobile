@@ -1,5 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { AppState } from "react-native";
+import { loadState, saveState, wipeStorage } from "./persist";
 
 // Everything the student writes lives on the phone. Nothing here is sent
 // anywhere except chat text (to the reply API) and, only if they opt in,
@@ -30,10 +31,9 @@ export type State = {
   plans: Plan[];
 };
 
-const KEY = "max.v1";
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-const initial = (): State => ({
+export const initialState = (): State => ({
   onboarded: false,
   companion: "Max",
   anonId: newId() + newId(),
@@ -47,28 +47,25 @@ const initial = (): State => ({
   plans: [],
 });
 
-let state = initial();
+let state = initialState();
 const listeners = new Set<() => void>();
 
 export async function hydrate() {
-  try {
-    const raw = await AsyncStorage.getItem(KEY);
-    if (raw) state = { ...initial(), ...JSON.parse(raw) };
-  } catch {
-    // A corrupt blob must not lock the student out; start clean.
-  }
+  state = await loadState(initialState);
+  listeners.forEach((l) => l());
 }
 
 export function update(fn: (s: State) => Partial<State>) {
   state = { ...state, ...fn(state) };
   listeners.forEach((l) => l());
-  AsyncStorage.setItem(KEY, JSON.stringify(state)).catch(() => {});
+  saveState(state);
 }
 
-export function resetAll() {
-  state = initial();
+/** Wipes every trace on this phone and returns to a first-run state. */
+export async function resetAll() {
+  state = initialState();
   listeners.forEach((l) => l());
-  AsyncStorage.removeItem(KEY).catch(() => {});
+  await wipeStorage();
 }
 
 export const getState = () => state;
@@ -86,4 +83,19 @@ export function useStore<T>(select: (s: State) => T): T {
 export function today(d = new Date()) {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Today's date, refreshed when the app returns to the foreground or the clock passes midnight. */
+export function useToday() {
+  const [d, setD] = useState(today);
+  useEffect(() => {
+    const refresh = () => setD((prev) => (prev === today() ? prev : today()));
+    const sub = AppState.addEventListener("change", (st) => st === "active" && refresh());
+    const tick = setInterval(refresh, 60_000);
+    return () => {
+      sub.remove();
+      clearInterval(tick);
+    };
+  }, []);
+  return d;
 }

@@ -21,11 +21,12 @@ const at = (hhmm: string, minus = 0) => {
 export async function applyReminders(s: Pick<State, "remindAt" | "bedtime" | "checkins">): Promise<boolean> {
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!s.remindAt && !s.bedtime) return true;
-  const perm = await Notifications.requestPermissionsAsync();
-  if (!perm.granted) return false;
   if (Platform.OS === "android") {
+    // The channel must exist before the permission prompt or Android 13+ may never show it.
     await Notifications.setNotificationChannelAsync("gentle", { name: "Gentle reminders", importance: Notifications.AndroidImportance.DEFAULT });
   }
+  const perm = await Notifications.requestPermissionsAsync();
+  if (!perm.granted) return false;
   const daily = (hhmm: string, minus = 0) => ({ type: Notifications.SchedulableTriggerInputTypes.DAILY as const, channelId: "gentle", ...at(hhmm, minus) });
 
   if (s.remindAt) {
@@ -39,3 +40,5 @@ export async function applyReminders(s: Pick<State, "remindAt" | "bedtime" | "ch
   }
   return true;
 }
+
+export const cancelReminders = () => Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});

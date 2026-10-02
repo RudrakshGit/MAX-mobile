@@ -4,7 +4,9 @@ import { Literata_500Medium } from "@expo-google-fonts/literata/500Medium";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { NavigationBar } from "expo-navigation-bar";
 import { StatusBar } from "expo-status-bar";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useEffect, useRef, useState } from "react";
 import { AppState, View } from "react-native";
@@ -53,6 +55,7 @@ export default function Root() {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg, justifyContent: "center", padding: space.lg, gap: space.md }}>
         <StatusBar style="auto" />
+        <NavigationBar style="auto" />
         <T v="display">MAX is locked.</T>
         <T soft>Your journal and check-ins stay private until you unlock.</T>
         <Button label="Unlock" icon="unlock" onPress={unlock} />
@@ -61,8 +64,10 @@ export default function Root() {
     );
 
   return (
-    <>
+    <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
       <StatusBar style="auto" />
+      {/* Icon colour follows light/dark, so back/home/recents stay visible on 3-button phones. */}
+      <NavigationBar style="auto" />
       <Stack
         screenOptions={{
           headerShadowVisible: false,
@@ -79,6 +84,6 @@ export default function Root() {
         <Stack.Screen name="campus" options={{ title: "Campus pulse" }} />
         <Stack.Screen name="journal-new" options={{ title: "New entry" }} />
       </Stack>
-    </>
+    </KeyboardProvider>
   );
 }

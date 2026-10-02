@@ -2,8 +2,8 @@ import { router, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { consistency, moodWords, nextStep, patterns } from "@/lib/insights";
-import { today, update, useStore, type CheckIn } from "@/lib/store";
-import { space } from "@/lib/theme";
+import { today, update, useStore, useToday, type CheckIn } from "@/lib/store";
+import { radius, space, useTheme } from "@/lib/theme";
 import { Button, Choice, Row, Screen, Section, T } from "@/lib/ui";
 import { sendPulse } from "@/lib/api";
 import { applyReminders } from "@/lib/reminders";
@@ -29,7 +29,8 @@ function greeting(h = new Date().getHours()) {
 }
 
 export default function Today() {
-  const date = today();
+  const t = useTheme();
+  const date = useToday();
   const checkins = useStore((s) => s.checkins);
   const companion = useStore((s) => s.companion);
   const results = useStore((s) => s.results);
@@ -48,7 +49,7 @@ export default function Today() {
       </T>
 
       {done && !editing ? (
-        <View style={{ marginTop: space.lg, gap: space.md }}>
+        <View style={{ marginTop: space.lg, padding: space.md, borderRadius: radius.lg, backgroundColor: t.paper, borderWidth: 1, borderColor: t.line, gap: space.md }}>
           <T v="voice">
             {`Today you feel ${moodWords[done.mood - 1]}. You slept ${sleepWords[done.sleep - 1]}, with ${done.screen ? `about ${done.screen === 60 ? "an hour or more" : `${done.screen} minutes`} of` : "no"} phone before bed, and study pressure feels ${stressWords[done.stress - 1]}.`}
           </T>
@@ -85,6 +86,7 @@ export default function Today() {
 }
 
 function CheckInForm({ initial, onSaved }: { initial?: CheckIn; onSaved: () => void }) {
+  const t = useTheme();
   const [mood, setMood] = useState(initial?.mood);
   const [sleep, setSleep] = useState(initial?.sleep);
   const [screen, setScreen] = useState(initial?.screen);
@@ -110,24 +112,26 @@ function CheckInForm({ initial, onSaved }: { initial?: CheckIn; onSaved: () => v
   };
 
   return (
-    <View style={{ marginTop: space.lg, gap: space.lg }}>
-      <Q label="Today I feel">
-        <Choice options={words(moodWords)} value={mood} onChange={setMood} fill />
-      </Q>
-      <Q label="Last night I slept">
-        <Choice options={words(sleepWords)} value={sleep} onChange={setSleep} fill />
-      </Q>
-      <Q label="Phone in the hour before sleep">
-        <Choice options={screenOpts} value={screen} onChange={setScreen} fill />
-        {measured ? (
-          <T v="small" soft>{`Measured on this phone: ${measured.min} min of screen time in the hour before you slept at ${new Date(measured.sleepAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}.`}</T>
-        ) : usageSupported && !hasUsageAccess() ? (
-          <T v="small" soft>Tip: MAX can measure this for you. Turn it on in Settings.</T>
-        ) : null}
-      </Q>
-      <Q label="Study pressure today">
-        <Choice options={words(stressWords)} value={stress} onChange={setStress} fill />
-      </Q>
+    <View style={{ marginTop: space.lg, gap: space.md }}>
+      <View style={{ backgroundColor: t.paper, padding: space.md, borderRadius: radius.lg, borderWidth: 1, borderColor: t.line, gap: space.md }}>
+        <Q label="Today I feel">
+          <Choice options={words(moodWords)} value={mood} onChange={setMood} fill />
+        </Q>
+        <Q label="Last night I slept">
+          <Choice options={words(sleepWords)} value={sleep} onChange={setSleep} fill />
+        </Q>
+        <Q label="Phone in the hour before sleep">
+          <Choice options={screenOpts} value={screen} onChange={setScreen} fill />
+          {measured ? (
+            <T v="small" soft>{`Measured on this phone: ${measured.min} min of screen time in the hour before you slept at ${new Date(measured.sleepAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}.`}</T>
+          ) : usageSupported && !hasUsageAccess() ? (
+            <T v="small" soft>Tip: MAX can measure this for you. Turn it on in Settings.</T>
+          ) : null}
+        </Q>
+        <Q label="Study pressure today">
+          <Choice options={words(stressWords)} value={stress} onChange={setStress} fill />
+        </Q>
+      </View>
       <Button kind="accent" label="Save today's check-in" onPress={save} disabled={!ready} />
     </View>
   );

@@ -23,7 +23,7 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: t.primary,
         tabBarInactiveTintColor: t.inkSoft,
-        tabBarStyle: { backgroundColor: t.paper, borderTopColor: t.line },
+        tabBarStyle: { backgroundColor: t.paper, borderTopColor: t.line, borderTopWidth: 1 },
         tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
         sceneStyle: { backgroundColor: t.bg },
       }}>

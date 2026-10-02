@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { newId, update } from "@/lib/store";
 import { space } from "@/lib/theme";
 import { Button, Choice, Field, Page, T } from "@/lib/ui";
@@ -27,9 +27,12 @@ export default function NewEntry() {
       <View style={{ gap: space.lg }}>
         <View style={{ gap: space.sm }}>
           <T soft>Start anywhere, or pick a prompt.</T>
-          <Choice options={prompts.map((p) => ({ label: p, value: p }))} value={prompt} onChange={(p) => setPrompt(p === prompt ? undefined : p)} />
+          {/* One scrollable row: five wrapped chips pushed the field below the keyboard. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: space.sm, paddingRight: space.md }} style={{ marginHorizontal: -space.md, paddingHorizontal: space.md }}>
+            <Choice options={prompts.map((p) => ({ label: p, value: p }))} value={prompt} onChange={(p) => setPrompt(p === prompt ? undefined : p)} nowrap />
+          </ScrollView>
         </View>
-        <Field value={text} onChangeText={setText} multiline autoFocus placeholder={prompt ?? "Write whatever comes…"} style={{ minHeight: 220 }} accessibilityLabel="Journal entry" />
+        <Field value={text} onChangeText={setText} multiline autoFocus placeholder={prompt ?? "Write whatever comes…"} style={{ minHeight: 140 }} accessibilityLabel="Journal entry" />
         <Button label="Save entry" onPress={save} disabled={!text.trim()} />
       </View>
     </Page>
