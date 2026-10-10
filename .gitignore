@@ -44,3 +44,7 @@ example
 
 # native build outputs of local modules
 modules/*/android/build/
+
+# tool & analysis outputs
+graphify-out/
+.agents/
