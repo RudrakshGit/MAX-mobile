@@ -1,10 +1,10 @@
 import { classifyRisk } from "@/safety/classifier";
 import { GUARD_FALLBACK, inspectOutput } from "@/safety/guard";
-import { systemPrompt } from "@/lib/prompt";
+import { reflectPrompt, systemPrompt } from "@/lib/prompt";
 import { modelRisk } from "@/safety/model-check";
+import { finalLevel, needsSafeguard } from "@/safety/risk";
+import { reply, read } from "@/server/groq";
 import { oneQuestion, plain, replyLanguage } from "@/lib/reply";
-
-const MODEL = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 
 type In = { role: "user" | "assistant"; text: string };
 const valid = (m: any): m is In => (m?.role === "user" || m?.role === "assistant") && typeof m.text === "string" && m.text.length > 0;
@@ -45,38 +45,25 @@ export async function POST(req: Request) {
   const name = String(body?.companion ?? "Max").replace(/[^\p{L}\p{N} ]/gu, "").slice(0, 20) || "Max";
   const context = typeof body?.context === "string" ? redact(body.context).slice(0, 1200) : "";
 
-  // Layer 2 runs alongside the reply, so it adds no waiting. If it says crisis,
-  // the reply is thrown away unseen.
+  const isReflect = body?.mode === "reflect";
+  const system = isReflect
+    ? reflectPrompt(name, replyLanguage(last.text))
+    : systemPrompt(name, risk.level === "distress", context, replyLanguage(last.text));
+
+  const convo = messages.map((m) => ({ role: m.role, content: redact(m.text) }));
   const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => redact(m.text));
-  const [modelLevel, res] = await Promise.all([modelRisk(recent, key), fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.7,
-      max_completion_tokens: 1024,
-      reasoning_effort: "low",
-      messages: [
-        { role: "system", content: systemPrompt(name, risk.level === "distress", context, replyLanguage(last.text)) },
-        ...messages.map((m) => ({ role: m.role, content: redact(m.text) })),
-      ],
-    }),
-  })]);
-  // Layer 2 exists to catch missed crises; it over-labels ordinary stress as
-  // distress, so it may only escalate to crisis.
-  const level = modelLevel === "crisis" ? "crisis" : risk.level;
-  if (modelLevel === null) console.warn(JSON.stringify({ event: "safety.model_check.unavailable" }));
+  const [text, r] = await Promise.all([reply(convo, system, key), read(recent, key)]);
+  const sg = needsSafeguard(risk.level, r, last.text.trim().split(/\s+/).length) ? await modelRisk(recent, key) : null;
+  const level = finalLevel(risk.level, r, sg);
+  if (r === null) console.warn(JSON.stringify({ event: "safety.read.unavailable", safeguard: sg === null ? "none" : "ran" }));
   if (level === "crisis") return Response.json({ kind: "crisis" });
-  if (!res.ok) {
-    console.warn(JSON.stringify({ event: "chat.provider_error", status: res.status }));
-    return Response.json({ error: "The AI provider did not answer" }, { status: 502 });
-  }
-  const data = await res.json();
-  const text = oneQuestion(plain(data?.choices?.[0]?.message?.content ?? ""));
-  if (!text) return Response.json({ error: "The AI returned an empty reply" }, { status: 502 });
+  if (!text) return Response.json({ error: "The AI provider did not answer" }, { status: 502 });
+
+  const cleaned = oneQuestion(plain(text));
+  if (!cleaned) return Response.json({ error: "The AI returned an empty reply" }, { status: 502 });
 
   // The full reply is inspected before it is sent, never after.
-  const verdict = inspectOutput(text);
+  const verdict = inspectOutput(cleaned);
   if (!verdict.safe) console.warn(JSON.stringify({ event: "safety.output_guard.blocked", code: verdict.code }));
-  return Response.json({ kind: "reply", text: verdict.safe ? text : GUARD_FALLBACK, distress: level === "distress" });
+  return Response.json({ kind: "reply", text: verdict.safe ? cleaned : GUARD_FALLBACK, distress: level === "distress", emotions: r?.emotions });
 }

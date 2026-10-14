@@ -1,0 +1,43 @@
+import type { Instrument } from "./types";
+
+export const rses: Instrument = {
+  id: "rses",
+  title: "Rosenberg Self-Esteem Scale (RSES)",
+  short: "RSES",
+  category: "growth",
+  minutes: 2,
+  clinical: false,
+  intro: "Below is a list of statements dealing with your general feelings about yourself.",
+  whatYouGet: [
+    "Total self-esteem score (0–30)",
+    "Reflection on self-worth and self-acceptance",
+    "CBT practices for self-compassion and validation",
+  ],
+  options: [
+    { label: "Strongly disagree", value: 0 },
+    { label: "Disagree", value: 1 },
+    { label: "Agree", value: 2 },
+    { label: "Strongly agree", value: 3 },
+  ],
+  items: [
+    { id: "rses-1", text: "I feel that I am a person of worth, at least on an equal plane with others." },
+    { id: "rses-2", text: "I feel that I have a number of good qualities." },
+    { id: "rses-3", text: "All in all, I am inclined to feel that I am a failure.", reverse: true },
+    { id: "rses-4", text: "I am able to do things as well as most other people." },
+    { id: "rses-5", text: "I feel I do not have much to be proud of.", reverse: true },
+    { id: "rses-6", text: "I take a positive attitude toward myself." },
+    { id: "rses-7", text: "On the whole, I am satisfied with myself." },
+    { id: "rses-8", text: "I wish I could have more respect for myself.", reverse: true },
+    { id: "rses-9", text: "I certainly feel useless at times.", reverse: true },
+    { id: "rses-10", text: "At times I think I am no good at all.", reverse: true },
+  ],
+  scoring: { kind: "sum" },
+  bands: [
+    { min: 0, label: "Low self-esteem", note: "Score < 15; suggests low self-esteem; self-compassion and reframing can help." },
+    { min: 15, label: "Healthy self-esteem", note: "Score 15–25; normal, balanced self-esteem." },
+    { min: 26, label: "High self-esteem", note: "Score 26–30; strong sense of self-worth and confidence." },
+  ],
+  source: "Rosenberg (1965), Society and the Adolescent Self-Image. Princeton University Press.",
+  licence: "Public domain (UMD Department of Sociology).",
+  scienceUrl: "https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale",
+};

@@ -1,0 +1,110 @@
+import type { Course } from "./types";
+
+export const STATUS = "draft" as const;
+
+export const examStress: Course = {
+  id: "exam-stress",
+  title: "Exam stress",
+  summary: "Practical tools for staying steady before, during, and after your exams.",
+  category: "exam",
+  days: [
+    {
+      day: 1,
+      title: "When the syllabus feels impossible",
+      body: [
+        "It is two weeks before mid-sems or final exams, you look at the syllabus, and panic sets in. Your chest tightens, and the voice inside says, 'I cannot finish this in time.'",
+        "When overwhelm hits, our instinctive reaction is to either cram frantically for 14 hours or give up and scroll in despair. Both increase your stress.",
+        "Take a step back and anchor yourself. Put down your pen, sit upright, and feel your back supported by your chair. The syllabus is large, but your brain can only process one concept at a time.",
+        "Grounding breaks the paralysis so you can make a realistic plan instead of reacting to panic.",
+      ],
+      action: { tool: "ground" },
+      watch: "mind-stress-tips",
+      source: "Basic cognitive-behavioural ideas as taught by the Beck Institute (beckinstitute.org)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 2,
+      title: "Checking the catastrophe",
+      body: [
+        "Exam anxiety feeds on catastrophic thoughts: 'If I mess up this subject, my CGPA will drop, I will not get placed, and my future is ruined.'",
+        "Catastrophising takes one uncertain event (a difficult exam) and jumps straight to the worst possible outcome as if it were a guaranteed fact.",
+        "Catch the thought and ask: What is the realistic worst case? What is the most likely case? Even if a paper goes poorly, you have mid-term internals, re-attempts, projects, and alternative routes.",
+        "Replacing catastrophe with reality frees up mental energy to focus on today's revision.",
+      ],
+      action: { tool: "reframe" },
+      watch: "catastrophizing-therapy",
+      source: "Cognitive reframing, after Beck & Clark (1988)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 3,
+      title: "The if-then study plan",
+      body: [
+        "Vague goals like 'I will study 8 hours today' set you up for frustration. When you inevitably get tired at hour 3, you feel like a failure.",
+        "Psychologists call specific behavioural triggers 'implementation intentions' or if-then plans. Instead of relying on willpower, you attach an action to a trigger.",
+        "For example: 'If it is 4:00 PM, then I will open Unit 3 and solve 2 previous-year questions.' Or: 'If I feel stuck on a derivation, then I will stand up, drink water, and ask a classmate.'",
+        "Small, explicit targets protect your momentum and reduce decision fatigue during exam week.",
+      ],
+      action: { tool: "spiral" },
+      watch: "emm-take-control",
+      source: "Implementation Intentions research (Gollwitzer, 1999)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 4,
+      title: "Before entering the exam hall",
+      body: [
+        "Standing outside the exam hall with your classmates is often the most anxious half-hour. Everyone is quizzing each other on obscure topics, and panic spreads like wildfire.",
+        "Social contagion is real. When you hear others panicking about topics you skipped, your sympathetic nervous system triggers full fight-or-flight mode.",
+        "Step away from the crowd 15 minutes before the bell. Find a quiet corner or balcony. Do three cycles of physiological sighing: two quick inhales through your nose and a long, slow sigh out through your mouth.",
+        "This signals your brain that you are safe, allowing your working memory to stay clear for the questions ahead.",
+      ],
+      action: { tool: "breathe" },
+      watch: "lll-54321-grounding",
+      source: "Stanford cyclic sighing protocol (Balban et al., 2023)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 5,
+      title: "Mid-exam freeze reset",
+      body: [
+        "You turn over the question paper, read Question 1, and your mind goes completely blank. Your heart starts pounding, and your palms sweat.",
+        "A mental blank is not memory loss; it is stress hormones temporarily blocking access to your prefrontal cortex. The knowledge is still there, but you cannot retrieve it while in a panic spike.",
+        "Do not force yourself to stare at the difficult question. Put your pen down for 60 seconds. Push your feet firmly into the floor. Notice three colours in the room. Take two slow, deep breaths.",
+        "Turn to an easier question first to build confidence. Once your nervous system settles, return to the tough question.",
+      ],
+      action: { tool: "ground" },
+      watch: "mind-stress-tips",
+      source: "Test Anxiety Interventions (Zeidner, 1998)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 6,
+      title: "Letting go of the paper",
+      body: [
+        "The exam ends, you walk out, and someone immediately starts arguing about Question 4: 'Did you get option B or option D?' You suddenly realize you made a silly error.",
+        "Post-exam rumination can ruin your entire evening and steal your focus from the next paper. Replaying past answers in your head cannot change a single mark.",
+        "Make a pact with yourself: once the paper is handed in, you will not discuss the solutions or look up formulas until all exams are over.",
+        "Acknowledge the regret: 'I wish I had solved that differently, but it is submitted. My job now is to rest and reset for tomorrow.'",
+      ],
+      action: { write: "What is one thing you will do to decompress this evening?" },
+      watch: "therapy-rumination",
+      source: "Rumination-focused CBT (Watkins, 2016)",
+      licence: "MAX Original adaptation",
+    },
+    {
+      day: 7,
+      title: "Your grades are not your worth",
+      body: [
+        "In Indian college environments, it is easy to equate your exam performance with your entire value as a human being. Family expectations and campus talk amplify this pressure.",
+        "Remember: an exam tests your recall of specific syllabus points on one morning under artificial time constraints. It does not measure your creativity, integrity, kindness, or future resilience.",
+        "Some of the most successful engineers, designers, and entrepreneurs struggled through semesters before finding their real strengths.",
+        "Give yourself credit for showing up and doing your best through a demanding week. You deserve rest, regardless of the score.",
+      ],
+      action: { tool: "reframe" },
+      watch: "who-dwm-tool5",
+      source: "Self-compassion in academic adversity (Neff et al., 2005)",
+      licence: "MAX Original adaptation",
+    },
+  ],
+};

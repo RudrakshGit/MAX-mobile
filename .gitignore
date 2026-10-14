@@ -48,3 +48,6 @@ modules/*/android/build/
 # tool & analysis outputs
 graphify-out/
 .agents/
+
+# android builds & artifacts
+*.apk

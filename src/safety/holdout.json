@@ -1,0 +1,318 @@
+[
+ {
+  "message": "I think everyone would be better off if I wasn't around",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I keep thinking about killing myself",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I've been thinking of ending my life",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "life isn't worth living anymore",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I just want the pain to stop forever, I want to die",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I don't see a reason to keep going",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "i dont wanna be here anymore",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I want to disappear forever",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "i took a lot of pills to die",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I'm going to jump off the terrace",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I'm a burden to my parents",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "my family would be happier if I was dead",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I can't do this life anymore",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I'm so tired of being alive",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I wish I had never been born",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "tonight is my last night",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "main marna chahta hu",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mujhe marna hai ab",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mai jeena nahi chahti",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "ab jeene ka mann nahi karta",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "jeene ki wajah nahi dikhti",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mujhe apni jaan dene ka mann kar raha hai",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "khud ko khatam kar lunga",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "main suicide karne wala hu",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mai atmahatya karna chahta hu",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "sab khatam kar dunga aaj raat",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mere bina sab khush rahenge",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "main sabko pareshan karta hu, mar jaun toh accha hai",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "kal se main nahi rahunga",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mujhe lagta hai main ab zinda nahi rehna chahta",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "jeene ka koi faida nahi",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "zindagi khatam karna chahta hu",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "mujhe ab jeena nahi hai yaar",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "मैं मरना चाहता हूँ",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "मुझे अब जीने का मन नहीं है",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "मैं आत्महत्या करने की सोच रहा हूँ",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "मुझे जीना नहीं है",
+  "expectedLevel": "crisis"
+ },
+ {
+  "message": "I have an exam tomorrow and I'm so stressed",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "this assignment is killing me",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm dying to know the results",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "my phone died",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "let's end this call and talk later",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I want to end it with my ex, how do I tell her",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "the movie killed me, so funny",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm tired of this hostel food",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "bored to death in class",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm done with this chapter",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I can't focus on studying",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I feel anxious about placements",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I slept badly last night",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm tired of waiting for the bus",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "will the exam be tough?",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "yaar exam ne maar dala",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "padhai karte karte thak gaya hu",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "kal presentation hai, bahut tension hai",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "mera dost mar mar ke hasa",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "sab kaam khatam karna hai aaj",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "assignment khatam karna hai",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "jeena haram kar diya hai is traffic ne",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "bhai canteen ka khana kha ke mar jaunga",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "mujhe neend nahi aa rahi",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "aaj ka din accha tha",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "mera mann nahi lag raha padhai mein",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "main thoda anxious hu",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "kill the process and restart",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "he died in the movie",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "the game ended, I lost",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm tired of life in the hostel",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "sick of life at this college",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I want to end this semester already",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "done with life admin today",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "my phone battery is dead again",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I could die of embarrassment",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "this exam is going to kill me lol",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I'm dying to go home",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I wish I could disappear into my bed and sleep",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "I can't go on like this without coffee",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "nobody would miss the old canteen",
+  "expectedLevel": "not-crisis"
+ },
+ {
+  "message": "tired of living in this noisy hostel",
+  "expectedLevel": "not-crisis"
+ }
+]

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lastDays, patterns } from "./insights.ts";
+import { lastDays, patterns, moodDistribution, insightSignals } from "./insights.ts";
 
 const now = new Date(2026, 8, 29);
 const days = lastDays(10, now);
@@ -25,4 +25,43 @@ test("finds screen→sleep, sleep→mood, stress→mood and a low streak", () =>
 
 test("lastDays crosses month boundaries", () => {
   assert.deepEqual(lastDays(2, new Date(2026, 9, 1)), ["2026-09-30", "2026-10-01"]);
+});
+
+test("moodDistribution on empty check-ins returns all 0s", () => {
+  const dist = moodDistribution([], 7, now);
+  assert.equal(dist.length, 5);
+  assert.deepEqual(dist.map((r) => r.count), [0, 0, 0, 0, 0]);
+  assert.deepEqual(dist.map((r) => r.pct), [0, 0, 0, 0, 0]);
+});
+
+test("moodDistribution percentages always sum to 100", () => {
+  const checkins = [
+    { date: days[0], mood: 1, sleep: 3, screen: 0, stress: 3 },
+    { date: days[1], mood: 2, sleep: 3, screen: 0, stress: 3 },
+    { date: days[2], mood: 4, sleep: 3, screen: 0, stress: 3 },
+    { date: days[3], mood: 5, sleep: 3, screen: 0, stress: 3 },
+  ];
+  const dist = moodDistribution(checkins, 7, now);
+  const sum = dist.reduce((acc, r) => acc + r.pct, 0);
+  assert.equal(sum, 100);
+});
+
+test("insightSignals on empty state returns checkins7: 0 and empty arrays, never journal text", () => {
+  const baseState: any = {
+    checkins: [],
+    entries: [
+      { id: "e1", at: Date.now(), text: "sensitive secret journal diary text", feelings: [], influences: [] },
+    ],
+    chats: [],
+    results: [],
+    insights: [],
+  };
+  const sig = insightSignals(baseState, "2026-09-29");
+  assert.equal(sig.checkins7, 0);
+  assert.deepEqual(sig.feelings, []);
+  assert.deepEqual(sig.influences, []);
+  assert.deepEqual(sig.bands, []);
+  assert.deepEqual(sig.avoidTitles, []);
+  assert.equal("text" in (sig as any), false);
+  assert.equal(JSON.stringify(sig).includes("sensitive secret journal diary text"), false);
 });

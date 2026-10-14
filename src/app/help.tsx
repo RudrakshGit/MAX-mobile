@@ -1,6 +1,8 @@
+import { router } from "expo-router";
 import { View } from "react-native";
 import { space, useTheme } from "@/lib/theme";
 import { Button, call, Page, T } from "@/lib/ui";
+import { Max } from "@/components/max";
 
 // Numbers verified against the issuing bodies; re-check before each release.
 const lines = [
@@ -14,13 +16,15 @@ export default function Help() {
   return (
     <Page>
       <View style={{ gap: space.lg }}>
-        <View style={{ gap: space.sm }}>
-          <T v="title">You don't have to handle this alone.</T>
-          <T soft>These are free and confidential, with trained people on the other end. You don't need to be in crisis to call.</T>
+        <View style={{ alignItems: "center", gap: space.sm }}>
+          <Max state="care" size={88} />
+          <T v="title" style={{ textAlign: "center" }}>You don't have to handle this alone.</T>
+          <T soft style={{ textAlign: "center" }}>These are free and confidential, with trained people on the other end. You don't need to be in crisis to call.</T>
         </View>
         <Button kind="danger" icon="alert-circle" label="In immediate danger: call 112" onPress={() => call("112")} />
+        <Button kind="secondary" icon="shield" label="Open my safety plan" onPress={() => router.push("/tool/safety-plan")} />
         {lines.map((l) => (
-          <View key={l.name} style={{ gap: space.sm, paddingTop: space.md, borderTopWidth: 1, borderTopColor: t.line }}>
+          <View key={l.name} style={{ gap: space.sm, paddingTop: space.md, borderTopWidth: 1, borderTopColor: t.rule }}>
             <T v="heading">{l.name}</T>
             <T v="small" soft>{l.note}</T>
             <Button kind="quiet" icon="phone" label={`Call ${l.number}`} onPress={() => call(l.number)} />

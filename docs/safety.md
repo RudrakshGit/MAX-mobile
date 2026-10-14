@@ -38,13 +38,17 @@ The Help button is on every tab and still works when the app is locked. A PHQ-9 
 
 ## Check-ups
 
-PHQ-9, GAD-7 and the Copenhagen Burnout Inventory (with its reverse-scored item) report a range, never a diagnosis. The weekly tech-stress check is MAX's own wording on the technostress dimensions of Tarafdar et al. (2007) and is labelled as not validated. ISI and PSS-10 are licensed through Mapi Trust and must not be added.
+All 15 instruments (`docs/v2-features.md` §5) report a range or profile, never a diagnosis; clinical screeners add "screening result, not a diagnosis" and a counsellor card. The weekly tech-stress check is MAX's own wording on the technostress dimensions of Tarafdar et al. (2007) and is labelled as not validated. ISI and PSS-10 are licensed through Mapi Trust and must not be added.
 
 ## Privacy boundary
 
-- No account; nothing identifying is collected.
-- Emails and Indian mobile numbers are redacted before text reaches the model.
-- The model may see weekly averages, check-up bands and the student's own if-then plans (toggle in Settings). Never journal text.
-- Screen-time data is read and computed on the phone and never sent.
+v2 (owner decision, Oct 2026): optional Google login stores the signed-in student's app data on our server; journal text and voice may be sent to the AI with consent. The rules below are the current boundary — see `docs/v2-features.md` §6.
+
+- Login is optional; signed out, everything stays on the phone. Signed in, the state envelope syncs to our server (Neon), minus the anonymous campus id and the lock setting.
+- Emails and Indian mobile numbers are redacted before text reaches the model; no name or account identifier is sent to the AI.
+- The chat model sees the conversation, weekly averages, check-up bands and the student's own if-then plans ("What your companion knows" toggle).
+- Journal text goes to the AI only for reflections/tags when "AI journal reflections & tags" is on; voice only for transcription when "Voice transcription" is on. Audio is never stored on the server.
+- The daily insight is built from numbers and chip ids only, never journal text.
+- Per-app screen-time is computed on the phone and never sent to the AI (it may sync with the student's account).
 - Campus pulse is opt-in: mood, sleep and pressure (1–5) with a random ID. A campus sees nothing until 10 distinct students contribute; per-day points appear only for days that clear 10 on their own.
 - Notification text never mentions mental health.

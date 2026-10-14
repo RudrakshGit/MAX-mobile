@@ -5,6 +5,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -82,8 +83,21 @@ class UsageStatsModule : Module() {
         .sortedByDescending { it.value }
         .take(limit)
         .map { (pkg, ms) ->
-          val label = try { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() } catch (_: Exception) { pkg }
-          mapOf("app" to label, "minutes" to ms / 60000.0)
+          val info = try { pm.getApplicationInfo(pkg, 0) } catch (_: Exception) { null }
+          val label = info?.let { pm.getApplicationLabel(it).toString() } ?: pkg
+          val cat = info?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) it.category else -1 } ?: -1
+          val catName = when (cat) {
+            ApplicationInfo.CATEGORY_GAME -> "game"
+            ApplicationInfo.CATEGORY_AUDIO -> "audio"
+            ApplicationInfo.CATEGORY_VIDEO -> "video"
+            ApplicationInfo.CATEGORY_IMAGE -> "image"
+            ApplicationInfo.CATEGORY_SOCIAL -> "social"
+            ApplicationInfo.CATEGORY_NEWS -> "news"
+            ApplicationInfo.CATEGORY_MAPS -> "maps"
+            ApplicationInfo.CATEGORY_PRODUCTIVITY -> "productivity"
+            else -> "undefined"
+          }
+          mapOf("app" to label, "pkg" to pkg, "category" to catName, "minutes" to ms / 60000.0)
         }
     }
   }

@@ -1,22 +1,23 @@
 # MAX — agent guide
 
-Read `docs/safety.md` before touching `src/safety/`, `src/lib/prompt.ts` or `src/app/api/`. Architecture is in `docs/architecture.md`.
+Antigravity: start with `HANDOFF.md`. Then the milestone brief in `docs/plan/`. Read `docs/safety.md` before touching `src/safety/`, `src/lib/prompt.ts`, `src/server/` or `src/app/api/`.
 
 ## Invariants: these break the product if violated
 
-- A crisis is never handled by AI. The deterministic classifier runs on the phone before sending and again on the server; the crisis card is fixed text.
+- A crisis is never handled by AI. The deterministic classifier runs on the phone before sending and again on the server; the crisis card is fixed text. A failed safety check means "unknown", never "safe".
 - No diagnosis, no medication talk, no "only I understand you". `inspectOutput()` checks every reply before it is sent; never stream around it.
-- Journal text never goes to a model. Screen-time data never leaves the phone.
-- Campus aggregates only, minimum 10 distinct students.
-- Only PHQ-9, GAD-7 and CBI ship as validated scales. ISI and PSS-10 are licensed; do not add them.
-- Colours live only in `src/lib/theme.ts`. Import fonts and icons by deep path (`@expo/vector-icons/Feather`, `@expo-google-fonts/literata/500Medium`), never the package index.
-- Secrets live in `.env.local` (dev) and EAS environment variables (deploy). Nothing `EXPO_PUBLIC_` may hold a secret.
+- AI calls happen only on the server (`src/app/api/`, `src/server/`). Model ids live in `src/server/groq.ts`.
+- Journal text and voice go to the AI only when the student has consented (Settings toggles); the daily insight never uses journal text; screen-time per app never goes to the AI.
+- Campus aggregates only, minimum 10 distinct students; the anonymous campus id is never uploaded with a signed-in account.
+- Only the 15 verified instruments in `docs/v2-features.md` §5 ship; their items come verbatim from the source (Claude-maintained `src/content/instruments/`). ISI and PSS-10 are licensed; never add them.
+- Colours live only in `src/lib/theme.ts`; the only non-grey colour is the crisis `help` red. Import fonts and icons by deep path, never the package index.
+- Secrets live in `.env.local` (dev) and EAS environment variables (deploy). Only `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` may be public.
 - A missed crisis phrase goes into `src/safety/golden.json` first, then the pattern is fixed.
 
 ## Verify
 
 ```bash
-npm run typecheck && npm test
+npm run verify
 ```
 
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.

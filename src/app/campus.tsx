@@ -30,7 +30,7 @@ export default function Campus() {
         <Field value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="Campus code" accessibilityLabel="Campus code" />
         <Button label="Show pulse" onPress={load} disabled={code.trim().length < 2 || state === "loading"} />
       </View>
-      {state === "loading" ? <ActivityIndicator style={{ marginTop: space.lg }} color={t.primary} /> : null}
+      {state === "loading" ? <ActivityIndicator style={{ marginTop: space.lg }} color={t.ink} /> : null}
       {state === "error" ? <T soft style={{ marginTop: space.lg }}>Couldn't load the pulse. Check your connection and try again.</T> : null}
       {data && !data.enough ? (
         <Section title="Not enough data yet">
@@ -49,7 +49,7 @@ export default function Campus() {
                 {data.days.map((d) => (
                   <View key={d.day} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
                     <T v="small" soft style={{ width: 64 }}>{new Date(d.day + "T00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</T>
-                    <View style={{ height: 10, borderRadius: 5, backgroundColor: t.series.mood, width: `${(d.mood / 5) * 70}%` }} />
+                    <View style={{ height: 10, borderRadius: 5, backgroundColor: t.ink, width: `${(d.mood / 5) * 70}%` }} />
                     <T v="small">{d.mood.toFixed(1)}</T>
                   </View>
                 ))}
@@ -65,7 +65,7 @@ export default function Campus() {
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: t.line }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: t.rule }}>
       <View>
         <T>{label}</T>
         {note ? <T v="small" soft>{note}</T> : null}

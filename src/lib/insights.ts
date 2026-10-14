@@ -67,7 +67,7 @@ export function patterns(all: CheckIn[], now = new Date()): string[] {
 /** One gentle suggestion from today's answers, or null when things look okay. */
 export function nextStep(c: CheckIn): { text: string; label: string; href: string } | null {
   if (c.mood <= 1) return { text: "Today feels heavy. You don't have to carry it alone.", label: "Talk it through", href: "/talk" };
-  if (c.screen >= 60 && c.sleep <= 2) return { text: "Rough sleep after a lot of phone time. Worth a two-minute read tonight.", label: "Your phone and your sleep", href: "/learn/phone-sleep" };
+  if (c.screen >= 60 && c.sleep <= 2) return { text: "Rough sleep after a lot of phone time. Worth a two-minute read tonight.", label: "Your phone and your sleep", href: "/lesson/phone-sleep" };
   if (c.stress >= 5) return { text: "Study pressure is intense today. Plan what you'll do when it spikes.", label: "Build a spiral breaker", href: "/tool/spiral" };
   if (c.mood <= 2) return { text: "A low day. Getting it onto the page often makes it smaller.", label: "Write it down", href: "/journal-new" };
   if (c.stress >= 4) return { text: "Heavy pressure today. One slow minute can take the edge off.", label: "One-minute reset", href: "/tool/breathe" };
@@ -99,3 +99,147 @@ export function wellbeingContext(s: Pick<State, "checkins" | "results" | "plans"
   if (s.plans.length) lines.push(`Their own coping plans: ${s.plans.slice(-3).map((p) => `"If ${p.trigger}, then I will ${p.instead}"`).join("; ")}.`);
   return lines.join("\n");
 }
+
+export function moodDistribution(
+  c: CheckIn[],
+  range: 7 | 30 | "all",
+  now: Date = new Date()
+): { mood: number; count: number; pct: number }[] {
+  let list = c;
+  if (range !== "all") {
+    const days = new Set(lastDays(range, now));
+    list = c.filter((x) => days.has(x.date));
+  }
+  const total = list.length;
+  const counts = [1, 2, 3, 4, 5].map((m) => list.filter((x) => x.mood === m).length);
+
+  if (total === 0) {
+    return [1, 2, 3, 4, 5].map((m) => ({ mood: m, count: 0, pct: 0 }));
+  }
+
+  // Hare-Niemeyer / Largest Remainder Method so pcts sum to exactly 100
+  const rawPcts = counts.map((cnt) => (cnt / total) * 100);
+  const floors = rawPcts.map(Math.floor);
+  let remainder = 100 - floors.reduce((a, b) => a + b, 0);
+  const order = rawPcts
+    .map((raw, idx) => ({ idx, rem: raw - floors[idx] }))
+    .sort((a, b) => b.rem - a.rem);
+  for (let i = 0; i < remainder; i++) {
+    floors[order[i].idx]++;
+  }
+
+  return [1, 2, 3, 4, 5].map((m, idx) => ({
+    mood: m,
+    count: counts[idx],
+    pct: floors[idx],
+  }));
+}
+
+export type InsightSignals = {
+  checkins7: number;
+  mood?: number;
+  sleep?: number;
+  pressure?: number;
+  phoneMin?: number;
+  feelings: [string, number][];
+  influences: [string, number][];
+  bands: { test: string; band: string }[];
+  avoidTitles: string[];
+};
+
+export function insightSignals(s: State, date: string): InsightSignals {
+  const d = new Date(date + "T12:00:00");
+  const validD = Number.isNaN(d.getTime()) ? new Date() : d;
+  const weekDays = new Set(lastDays(7, validD));
+  const c7 = (s.checkins ?? []).filter((x) => weekDays.has(x.date));
+
+  const mood = c7.length ? r1(avg(c7.map((x) => x.mood))) : undefined;
+  const sleep = c7.length ? r1(avg(c7.map((x) => x.sleep))) : undefined;
+  const pressure = c7.length ? r1(avg(c7.map((x) => x.stress))) : undefined;
+  const phoneMin = c7.length ? Math.round(avg(c7.map((x) => x.screenMin ?? x.screen))) : undefined;
+
+  // 7-day window timestamp range for entries and chats
+  const startMs = new Date(validD.getFullYear(), validD.getMonth(), validD.getDate() - 6).getTime();
+  const endMs = new Date(validD.getFullYear(), validD.getMonth(), validD.getDate() + 1).getTime();
+
+  // Feelings: from entries + assistant message emotions
+  const feelingCounts = new Map<string, number>();
+  for (const e of s.entries ?? []) {
+    if (e.at >= startMs && e.at < endMs) {
+      for (const f of e.feelings ?? []) {
+        if (f) feelingCounts.set(f, (feelingCounts.get(f) ?? 0) + 1);
+      }
+    }
+  }
+  for (const chat of s.chats ?? []) {
+    for (const msg of chat.messages ?? []) {
+      if (msg.role === "assistant" && msg.at >= startMs && msg.at < endMs) {
+        for (const emo of msg.emotions ?? []) {
+          if (emo) feelingCounts.set(emo, (feelingCounts.get(emo) ?? 0) + 1);
+        }
+      }
+    }
+  }
+
+  const feelings = [...feelingCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  // Influences: from entries
+  const influenceCounts = new Map<string, number>();
+  for (const e of s.entries ?? []) {
+    if (e.at >= startMs && e.at < endMs) {
+      for (const inf of e.influences ?? []) {
+        if (inf) influenceCounts.set(inf, (influenceCounts.get(inf) ?? 0) + 1);
+      }
+    }
+  }
+  const influences = [...influenceCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  // Bands from results
+  const bands: { test: string; band: string }[] = [];
+  const seenTests = new Set<string>();
+  for (const r of [...(s.results ?? [])].reverse()) {
+    if (r.band && !seenTests.has(r.checkup)) {
+      seenTests.add(r.checkup);
+      bands.push({ test: r.checkup, band: r.band });
+    }
+  }
+
+  // Avoid titles from existing insights
+  const avoidTitles = (s.insights ?? []).map((i) => i.title).filter(Boolean);
+
+  return {
+    checkins7: c7.length,
+    ...(mood !== undefined && Number.isFinite(mood) ? { mood } : {}),
+    ...(sleep !== undefined && Number.isFinite(sleep) ? { sleep } : {}),
+    ...(pressure !== undefined && Number.isFinite(pressure) ? { pressure } : {}),
+    ...(phoneMin !== undefined && Number.isFinite(phoneMin) ? { phoneMin } : {}),
+    feelings,
+    influences,
+    bands,
+    avoidTitles,
+  };
+}
+
+export function hasRecentCrisis(s: State, now = Date.now()): boolean {
+  const sevenDaysMs = 7 * 864e5;
+  const since = now - sevenDaysMs;
+
+  for (const chat of s.chats ?? []) {
+    for (const msg of chat.messages ?? []) {
+      if (msg.role === "assistant" && msg.kind === "crisis" && msg.at >= since) {
+        return true;
+      }
+    }
+  }
+
+  for (const entry of s.entries ?? []) {
+    if ((entry as any).kind === "crisis" && entry.at >= since) {
+      return true;
+    }
+  }
+
+  return false;
+}
+

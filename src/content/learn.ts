@@ -73,7 +73,7 @@ export const lessons: Lesson[] = [
       "Light isn't the only problem. Group chats, reels and notifications keep your mind switched on exactly when it needs to wind down, and one more video is designed to be hard to refuse.",
       "Small changes help: charge your phone away from your bed, stop scrolling 30 to 60 minutes before sleep, or switch to something that doesn't refresh itself. Track it in your daily check-in and watch your Insights. You may see your own pattern within two weeks.",
     ],
-    tryThis: { label: "See your sleep and screen pattern", href: "/(tabs)/insights" },
+    tryThis: { label: "See your sleep and screen pattern", href: "/profile/mood" },
     sources: [
       "Chang, A.-M., Aeschbach, D., Duffy, J. F., & Czeisler, C. A. (2015). Evening use of light-emitting eReaders negatively affects sleep, circadian timing, and next-morning alertness. PNAS, 112(4), 1232–1237.",
     ],

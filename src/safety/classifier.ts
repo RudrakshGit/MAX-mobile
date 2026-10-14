@@ -76,12 +76,56 @@ const CRISIS_PATTERNS: PatternRule[] = [
     reason: "General suicide keyword presence",
   },
   {
-    regex: /\b(want|wish|wanna)\s+(to\s+|i\s+could\s+)?(disappear|vanish)\b|\bnever\s+wake\s+up\b|\bno\s+point\s+(in\s+)?(living|going\s+on)\b/i,
+    regex: /\b(want|wish|wanna)\s+(to\s+|i\s+could\s+)?(disappear|vanish)\b(?!\s+into\b)|\bnever\s+wake\s+up\b|\bno\s+point\s+(in\s+)?(living|going\s+on)\b/i,
     reason: "Passive ideation: disappear, never wake up, no point living",
   },
   {
     regex: /\b(better|happier)\s+(off\s+)?without\s+me\b/i,
     reason: "Sees others as better off without them",
+  },
+  {
+    regex: /\b(life|living)\s+(isn'?t|is\s+not|not)\s+worth\s+(it|living)|\bnot\s+worth\s+living\b|\bbetter\s+off\s+if\s+i\s+(wasn'?t|weren'?t|was\s+not|died|was\s+gone|were\s+gone)\b/i,
+    reason: "Life not worth living / others better off if they were gone",
+  },
+  {
+    regex: /\bpills\s+to\s+die\b|\b(took|taken|swallowed)\s+(a\s+lot\s+of\s+|too\s+many\s+|all\s+the\s+|some\s+)?(pills|tablets)\s+(to|and|so)\b|\bjump(ing)?\s+(off|from)\s+(the\s+|a\s+|my\s+)?(terrace|ledge|tower|hostel|window)\b|\b(going|about)\s+to\s+jump\b|\btonight\s+is\s+my\s+last\b|\bmy\s+last\s+night\b/i,
+    reason: "Method or imminent plan",
+  },
+  {
+    regex: /\b(don'?t|dont|do\s+not|no\s+longer)\s+(want\s+to|wanna)\s+(be\s+)?(alive|here|around|living)\b|\b(want|wanna)\s+to\s+(be\s+)?dead\b/i,
+    reason: "Does not want to be alive",
+  },
+  {
+    regex: /\bwish\s+(that\s+)?(i|we)\s+(was|were|am)\s+(dead|gone)\b|\bwish\s+i\s+(had\s+)?(never\s+been\s+born|wasn'?t\s+(alive|born|here))\b/i,
+    reason: "Wishes to be dead or never born",
+  },
+  {
+    regex: /\b(want|wanna|going|ready|about)\s+to\s+end\s+(it|everything)(?!\s+(with|between|the\s+(call|chat|conversation|relationship)))|\b(thinking|thought)\s+(of|about)\s+ending\s+(it|my\s+life|everything)\b|\bending\s+my\s+life\b/i,
+    reason: "Wants to end it / end life",
+  },
+  {
+    regex: /\b(no\s*one|nobody)\s+(would|will)\s+(even\s+)?(miss|care|notice)\b[^.!?]*\b(i|me)\b[^.!?]*\b(die|died|gone|dead|disappear)|\b(no\s*one|nobody)\s+(would|will)\s+miss\s+me\b/i,
+    reason: "Believes no one would miss them",
+  },
+  {
+    regex: /\bcan'?t\s+go\s+on\s+(like\s+this(?!\s+without)|any\s*more|living)\b|\bcan'?t\s+do\s+this\s+(life\s+)?any\s*more\b/i,
+    reason: "Cannot go on",
+  },
+  {
+    regex: /\b(tired|sick|done|exhausted)\s+of\s+(living(?!\s+(in|at|here|on|with)\b)|being\s+alive|life\b(?!\s+(in|at|here|on|with|as|and\s+(studies|exams|college|hostel))))|\b(done|finished)\s+with\s+(life|living)\b(?!\s+(admin|stuff|chores|hacks))/i,
+    reason: "Tired of living",
+  },
+  {
+    regex: /\b(i\s*(am|'m)|i\s+feel\s+like\s+(i\s*(am|'m)\s+)?)\s*a\s+burden\b|\bburden\s+(to|on)\s+(everyone|everybody|my\s+(family|friends|parents)|others)\b/i,
+    reason: "Perceived burdensomeness",
+  },
+  {
+    regex: /\b(would|will)\s+(all\s+)?be\s+(fine|better|happier|relieved)\s+if\s+i\s+(died|was\s+gone|were\s+gone|was\s+dead|were\s+dead|wasn'?t\s+(here|around))\b/i,
+    reason: "Others would be better off if they died",
+  },
+  {
+    regex: /\b(don'?t|dont|do\s+not)\s+see\s+(a\s+|any\s+)?(point|reason|way)\s+(in\s+|to\s+)?(living|going\s+on|being\s+alive|continuing|live|go\s+on|keep\s+going|keep\s+living)\b|\bkilling\s+myself\b|\bkms\b/i,
+    reason: "No reason to continue / self-kill phrasing",
   },
 ];
 
@@ -161,7 +205,7 @@ const HINGLISH_CRISIS_PATTERNS: PatternRule[] = [
     reason: "Hinglish: intent to harm or kill self",
   },
   {
-    regex: /\bjaan\s+(de\s+(dun|dungi|doon)|dena|le\s+lun)/i,
+    regex: /\bjaan\s+(de\s+(dun|dungi|doon)|dena|dene|le\s+lun)/i,
     reason: "Hinglish: intent to give up life",
   },
   {
@@ -189,7 +233,7 @@ const HINGLISH_CRISIS_PATTERNS: PatternRule[] = [
     reason: "Hinglish: sees self as a burden",
   },
   {
-    regex: /\bmar\s+jaa?un?\s+t[oa]\s+(accha|acha|behtar|better)/i,
+    regex: /\bmar\s+jaa?un?\s+t(oh|o|a)\s+(accha|acha|behtar|better)/i,
     reason: "Hinglish: better off dead",
   },
   {
@@ -203,6 +247,47 @@ const HINGLISH_CRISIS_PATTERNS: PatternRule[] = [
   {
     regex: /\bapni\s+(sari\s+|saari\s+)?(cheezein|cheeze|chize|chizein|saman|samaan)\s+(de\s+(di|dunga|dungi)|baant)/i,
     reason: "Hinglish: giving belongings away",
+  },
+  {
+    regex: /\bj(ee|i)na\s+(nahi|nahin|nai|nhi)\s+(chah|hai|hota|h\b|raha|rahi)|\bj(ee|i)ne\s+(ki|ka)\s+(ichh?a|icch?a|ichchha|chah|man+)\s+(nahi|nahin|nai|nhi)/i,
+    reason: "Hinglish: does not want to live",
+  },
+  {
+    regex: /\b(mujhe|mai|main|mein|ab)\s+(ab\s+)?mar(na|\s*jaa?na)\s+hai\b|\bmar(na|\s*jaa?na)\s+hai\s+(mujhe|ab)\b/i,
+    reason: "Hinglish: needs to die",
+  },
+  {
+    regex: /\b(sab|sab\s*kuch|sabkuch|life|zindagi|jindagi|jaan)\s+(ko\s+)?(khatam|khatm|khtm)\s+(kar\s*(du|dun|doon|dunga|dungi|dena|na\s+chah|ne\s+(ka|ki))|karna\s+(hai|chah))/i,
+    reason: "Hinglish: wants to end everything or life",
+  },
+  {
+    regex: /\bzinda\s+(nahi|nhi)\s+reh(na|ne)\b|(nahi|nhi)\s+rah(unga|ungi)\s*[.!?]*$/i,
+    reason: "Hinglish: will not be alive",
+  },
+  {
+    regex: /\bjaan\s+le\s+(lunga|lungi|loonga|loongi)\b/i,
+    reason: "Hinglish: will take own life",
+  },
+  {
+    regex: /\bj(ee|i)ne\s+(ka|ki)\s+(koi\s+)?(reason|wajah|vajah|matlab|maksad|maqsad|purpose)\b|\bkoi\s+(reason|wajah|vajah|matlab)\s+(nahi|nahin|nhi|nai)\s+(bacha|bachi|raha|rahi|hai)\b/i,
+    reason: "Hinglish: no reason to live",
+  },
+  {
+    regex: /\bmar\s+jaa?un?\s+(toh|to)\s+(sab|sabko|kisi|koi|log)/i,
+    reason: "Hinglish: death would fix things",
+  },
+  {
+    regex: /\bsabke\s+liye\s+(ek\s+)?(burden|bojh|bojhh)|\bburden\s+(hu|hun|hoon|ban\s+gay)|\bsab\s+pe\s+bojh/i,
+    reason: "Hinglish: perceived burdensomeness",
+  },
+  {
+    regex: /\bkaash\s+(main|mai|mein)?\s*(mar\s+j|so\s+jaa?u)|\bpaida\s+(hi\s+)?(nahi|nhi)\s+(hota|hui|hua)\b/i,
+    reason: "Hinglish: wishes to be dead or never born",
+  },
+  // Devanagari (more forms)
+  {
+    regex: /जीने\s+की\s+(इच्छा|चाह)\s+नहीं|जीना\s+नहीं\s+चाह|मरना\s+है|सब\s+(कुछ\s+)?खत्म\s+कर|जान\s+ले\s+(लूंगा|लूँगी)/,
+    reason: "Hindi: wants to die",
   },
   // Devanagari
   {
@@ -259,6 +344,10 @@ const HINGLISH_DISTRESS_PATTERNS: PatternRule[] = [
   {
     regex: /\b(neend|nind)\s+(nahi|nahin|nhi)\s+aa/i,
     reason: "Hinglish: insomnia",
+  },
+  {
+    regex: /\b(zindagi|jindagi|life)\s+se\s+(thak|tang|bezaar|pareshan)|\bab\s+(nahi|nhi)\s+hota\b|\bsehen\s+(nahi|nhi)\s+kar/i,
+    reason: "Hinglish: exhausted by life",
   },
   // Devanagari
   {

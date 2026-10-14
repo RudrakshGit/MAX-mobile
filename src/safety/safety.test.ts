@@ -19,3 +19,16 @@ test("guard blocks diagnosis, medication, dependence; passes ordinary support", 
   assert.equal(inspectOutput("Only I understand you.").safe, false);
   assert.equal(inspectOutput("That sounds exhausting. What happened today?").safe, true);
 });
+
+// Phrasings written after the audit of 14 Oct 2026 found the first classifier caught ~22% of them.
+// "not-crisis" rows are everyday talk and idioms that must never show the crisis card.
+const holdout: Case[] = JSON.parse(readFileSync(new URL("./holdout.json", import.meta.url), "utf8"));
+
+test("holdout set: crisis phrasings are caught, everyday talk is not flagged as crisis", () => {
+  assert.ok(holdout.length >= 60);
+  const misses = holdout.filter((c) => {
+    const level = classifyRisk(c.message).level;
+    return c.expectedLevel === "crisis" ? level !== "crisis" : level === "crisis";
+  });
+  assert.deepEqual(misses.map((c) => c.message), []);
+});

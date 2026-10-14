@@ -1,0 +1,45 @@
+import type { Instrument } from "./types";
+
+export const phq9: Instrument = {
+  id: "phq9",
+  title: "Low mood check (PHQ-9)",
+  short: "PHQ-9",
+  category: "wellness",
+  minutes: 2,
+  clinical: true,
+  crisisItem: 8,
+  intro: "Over the last 2 weeks, how often have you been bothered by the following problems?",
+  whatYouGet: [
+    "A screening range for depressive symptoms",
+    "Suggested next steps and self-help tools",
+    "Immediate access to support if needed",
+  ],
+  options: [
+    { label: "Not at all", value: 0 },
+    { label: "Several days", value: 1 },
+    { label: "More than half the days", value: 2 },
+    { label: "Nearly every day", value: 3 },
+  ],
+  items: [
+    { id: "phq9-1", text: "Little interest or pleasure in doing things" },
+    { id: "phq9-2", text: "Feeling down, depressed, or hopeless" },
+    { id: "phq9-3", text: "Trouble falling or staying asleep, or sleeping too much" },
+    { id: "phq9-4", text: "Feeling tired or having little energy" },
+    { id: "phq9-5", text: "Poor appetite or overeating" },
+    { id: "phq9-6", text: "Feeling bad about yourself — or that you are a failure or have let yourself or your family down" },
+    { id: "phq9-7", text: "Trouble concentrating on things, such as reading the newspaper or watching television" },
+    { id: "phq9-8", text: "Moving or speaking so slowly that other people could have noticed. Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual" },
+    { id: "phq9-9", text: "Thoughts that you would be better off dead, or of hurting yourself in some way" },
+  ],
+  scoring: { kind: "sum" },
+  bands: [
+    { min: 0, label: "Minimal", note: "Few or no depressive symptoms reported." },
+    { min: 5, label: "Mild", note: "Mild depressive symptoms." },
+    { min: 10, label: "Moderate", note: "Moderate symptoms; consider discussing with a counsellor." },
+    { min: 15, label: "Moderately severe", note: "Moderately severe symptoms; professional support recommended." },
+    { min: 20, label: "Severe", note: "Severe symptoms; professional evaluation strongly advised." },
+  ],
+  source: "Kroenke, Spitzer & Williams (2001), J Gen Intern Med 16(9):606–613.",
+  licence: "Public domain / free to use (Pfizer copyright released).",
+  scienceUrl: "https://pubmed.ncbi.nlm.nih.gov/11556941/",
+};

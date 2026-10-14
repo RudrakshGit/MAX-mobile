@@ -29,3 +29,25 @@ export function oneQuestion(text: string) {
     .replace(/\s+\n/g, "\n")
     .trim();
 }
+
+const TEST_MARKER = /\s*\[\[test:([a-zA-Z0-9_-]+)\]\]/g;
+
+/** Strips every [[test:...]] marker and returns the first allowed id (unknown ids are dropped). */
+export function extractTestChip(
+  text: string,
+  allowedIds: string[] | Set<string> = []
+): { text: string; testId?: string } {
+  const allowedSet = allowedIds instanceof Set ? allowedIds : new Set(allowedIds);
+  let testId: string | undefined;
+
+  for (const match of text.matchAll(/\[\[test:([a-zA-Z0-9_-]+)\]\]/g)) {
+    const id = match[1];
+    if (allowedSet.has(id)) {
+      testId = id;
+      break;
+    }
+  }
+
+  const cleaned = text.replace(TEST_MARKER, "").trim();
+  return { text: cleaned, testId };
+}
