@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { byId, score } from "@/content/instruments";
-import { newId, update, type Result } from "@/lib/store";
+import { newId, update, useStore, type Result } from "@/lib/store";
 import { radius, space, useTheme } from "@/lib/theme";
 import { Button, CrisisCard, Page, Screen, Section, T, openWebUrl } from "@/lib/ui";
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
@@ -17,6 +17,7 @@ export default function TestRunner() {
 
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const companion = useStore((st) => st.companion) || "Max";
   const [result, setResult] = useState<Result>();
   const lastTap = useRef(0);
   const done = useRef(false);
@@ -136,7 +137,7 @@ export default function TestRunner() {
               ) : null}
 
               {/* Next steps */}
-              <Button kind="quiet" label="Talk it through with companion" onPress={() => router.replace("/talk")} />
+              <Button kind="quiet" label={`Talk it through with ${companion}`} onPress={() => router.replace("/talk")} />
               <Button kind="quiet" label="Done" onPress={() => router.back()} />
 
               <View style={{ marginTop: space.sm }}>

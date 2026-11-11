@@ -27,7 +27,7 @@ export function MaxQuickActions({ visible }: { visible: boolean }) {
       id: "talk",
       icon: "chat",
       label: "Talk to MAX",
-      description: "Chat with your AI companion anytime",
+      description: "Talk it through, any time",
       onPress: () => {
         close();
         router.push("/talk" as Href);

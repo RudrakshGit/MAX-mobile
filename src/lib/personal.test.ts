@@ -81,6 +81,9 @@ test("chat starters fit the time of day and an upcoming exam", () => {
   assert.ok(chatStarters(S(), at(9)).includes("I don't feel like starting today"));
   assert.equal(chatStarters(S({ exams: [{ id: "x", name: "Physics", date: "2026-11-05" }] }), at(15))[0], "I'm worried about my Physics exam");
   assert.equal(chatStarters(S(), at(15)).length, 4);
+  // always a neutral and a happy one, whatever the day looks like
+  const low = chatStarters(S({ checkins: [ci("2026-11-03", { mood: 1 })] }), at(15));
+  assert.ok(low.includes("Just want to chat") && low.includes("Something good happened today"));
 });
 
 test("what helps me: most helpful first, only tools rated at least twice", () => {

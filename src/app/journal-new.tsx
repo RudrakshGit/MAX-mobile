@@ -314,11 +314,13 @@ export default function JournalNew() {
 
     setLoadingAi(true);
     let timedOut = false;
+    // the tags take 1–2 s on the server (measured 11 Nov 2026) plus the phone's network; past 6 s the entry is saved
+    // without them rather than keeping the student waiting
     const timer = setTimeout(() => {
       timedOut = true;
       setLoadingAi(false);
       doSave();
-    }, 2500);
+    }, 6000);
 
     try {
       const res = await suggestTags(cleanText);
@@ -504,7 +506,7 @@ export default function JournalNew() {
               </View>
             </Section>
 
-            <View style={{ marginTop: space.sm }}>
+            <View style={{ marginTop: space.sm, gap: space.md }}>
               <Button label="Next" onPress={() => setStep(3)} />
               <Button kind="quiet" label="Back" onPress={() => setStep(1)} />
             </View>
@@ -531,7 +533,7 @@ export default function JournalNew() {
               ))}
             </View>
 
-            <View style={{ marginTop: space.md }}>
+            <View style={{ marginTop: space.md, gap: space.md }}>
               <Button label="Next" onPress={() => setStep(4)} />
               <Button kind="quiet" label="Back" onPress={() => setStep(2)} />
             </View>
@@ -754,7 +756,7 @@ export default function JournalNew() {
               </View>
             </Section>
 
-            <View style={{ marginTop: space.sm }}>
+            <View style={{ marginTop: space.sm, gap: space.md }}>
               <Button label="Save entry" onPress={() => doSave()} />
               <Button kind="quiet" label="Back" onPress={() => setStep(4)} />
             </View>

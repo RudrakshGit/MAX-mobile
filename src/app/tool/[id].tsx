@@ -183,14 +183,17 @@ function Breathe() {
           <T soft>{left > 0 ? `${left} seconds left` : "Finishing this breath…"}</T>
         </View>
       ) : null}
-      <Button
-        kind={running ? "quiet" : "primary"}
-        label={running ? "Stop" : left === 0 ? "Go again" : "Start one minute"}
-        onPress={() => {
-          setLeft(60);
-          setRunning(!running);
-        }}
-      />
+      {/* centred like the rest of the screen (a quiet button aligns to the start on its own) */}
+      <View style={{ alignSelf: "center" }}>
+        <Button
+          kind={running ? "quiet" : "primary"}
+          label={running ? "Stop" : left === 0 ? "Go again" : "Start one minute"}
+          onPress={() => {
+            setLeft(60);
+            setRunning(!running);
+          }}
+        />
+      </View>
       {finished && !running ? <HelpedPrompt key={`b-${pattern}`} tool={pattern === "478" ? "breathe478" : "breathe"} /> : null}
       <T v="small" soft style={{ textAlign: "center", paddingHorizontal: space.md }}>
         Feeling dizzy? Stop and breathe normally.

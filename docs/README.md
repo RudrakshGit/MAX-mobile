@@ -32,5 +32,5 @@ Start here. Each file has one job; keep them short and true to the code.
 ## Still waiting on the owner
 Google Cloud sign-in and the Neon database ([M11](plan/M11-login-and-sync.md#owner-steps-all-free-no-card)), `ADMIN_EMAILS`
 for college review ([M15](plan/M15-college-dashboard.md#owner-steps)), deploying the server, and signing the release APK
-with a private key. Built APKs live outside the repo in `Major_Project/apk/` (latest: `max-phone-1.8.2.apk`, 11 Nov 2026). M16's motion
+with a private key. Built APKs live outside the repo in `Major_Project/apk/` (latest: `max-phone-1.8.4.apk`, 11 Nov 2026). M16's motion
 still needs a check on a real phone ([M16](plan/M16-motion-cards-ia.md#phase-6--7-nov-2026-claude)).

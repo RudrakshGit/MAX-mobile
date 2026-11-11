@@ -2,7 +2,7 @@
   "expo": {
     "name": "MAX",
     "slug": "max-companion",
-    "version": "1.8.2",
+    "version": "1.8.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "max",
@@ -16,7 +16,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 14,
+      "versionCode": 16,
       "allowBackup": false
     },
     "web": {

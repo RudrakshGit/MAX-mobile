@@ -17,6 +17,10 @@ async function handlePOST(req: Request) {
   const email = cleanEmail(body?.email);
   if (!f || !email) return Response.json({ error: "invalid" }, { status: 400 });
   await ensureSchema(sql);
+  // The per-IP limit above is per server instance, so it can't stop a flood on its own; this one is shared: at most
+  // 20 new applications an hour across the whole service keeps the admin's review list usable.
+  const recent = await sql`select count(*)::int as n from colleges where status = 'pending' and created_at > now() - interval '1 hour'`;
+  if ((recent[0]?.n ?? 0) >= 20) return Response.json({ error: "busy" }, { status: 429 });
   const id = crypto.randomUUID();
   // one statement: the college and its owner, unless this email already has an application waiting
   const rows = await sql`with ins as (insert into colleges (id, name, city, state, aishe, website, applicant_role, applicant_phone, applicant_email)

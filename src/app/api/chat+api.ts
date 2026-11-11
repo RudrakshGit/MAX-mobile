@@ -4,7 +4,8 @@ import { reflectPrompt, systemPrompt } from "@/lib/prompt";
 import { modelRisk } from "@/safety/model-check";
 import { finalLevel, needsSafeguard } from "@/safety/risk";
 import { reply, read } from "@/server/groq";
-import { oneQuestion, plain, replyLanguage } from "@/lib/reply";
+import { latinOnly, oneQuestion, plain, replyLanguage } from "@/lib/reply";
+import { userTextsAfterCard } from "@/lib/chat-payload";
 
 type In = { role: "user" | "assistant"; text: string };
 const valid = (m: any): m is In => (m?.role === "user" || m?.role === "assistant") && typeof m.text === "string" && m.text.length > 0;
@@ -46,18 +47,17 @@ export async function POST(req: Request) {
   const context = typeof body?.context === "string" ? redact(body.context).slice(0, 1200) : "";
 
   const isReflect = body?.mode === "reflect";
-  // A helpline card was shown a few messages ago (the phone says so). The latest message itself was checked above;
-  // the earlier one already got its card, so it isn't scored again, and MAX keeps talking in care mode.
+  // Care mode: a helpline card was shown a moment ago and the student hasn't said they're safe yet (the phone decides,
+  // src/lib/chat-payload.ts: at most two replies). After that MAX talks normally again.
   const afterCrisis = !isReflect && body?.afterCrisis === true;
   const system = isReflect
     ? reflectPrompt(name, replyLanguage(last.text))
     : systemPrompt(name, risk.level === "distress", context, replyLanguage(last.text), afterCrisis);
 
   const convo = messages.map((m) => ({ role: m.role, content: redact(m.text) }));
-  const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => redact(m.text));
-  // Before: every follow-up was scored together with the message that triggered the card, so each one showed the
-  // card again and MAX never answered ("ye manas kaun hai", "baat karo na"). A new crisis message still gets one.
-  const scored = afterCrisis ? recent.slice(-1) : recent;
+  // Only what the student said after the last helpline card is scored: a message that already got a card must not
+  // bring it back on every later message ("ye manas kaun hai", "Yes I feel safe"). A new crisis message still gets one.
+  const scored = userTextsAfterCard(messages).slice(-3).map(redact);
   const [text, r] = await Promise.all([reply(convo, system, key), read(scored, key)]);
   const sg = needsSafeguard(risk.level, r, last.text.trim().split(/\s+/).length) ? await modelRisk(scored, key) : null;
   const level = finalLevel(risk.level, r, sg);
@@ -65,7 +65,8 @@ export async function POST(req: Request) {
   if (level === "crisis") return Response.json({ kind: "crisis" });
   if (!text) return Response.json({ error: "The AI provider did not answer" }, { status: 502 });
 
-  const cleaned = oneQuestion(plain(text));
+  const lang = replyLanguage(last.text);
+  const cleaned = oneQuestion(lang === "hindi" ? plain(text) : latinOnly(plain(text)));
   if (!cleaned) return Response.json({ error: "The AI returned an empty reply" }, { status: 502 });
 
   // The full reply is inspected before it is sent, never after.

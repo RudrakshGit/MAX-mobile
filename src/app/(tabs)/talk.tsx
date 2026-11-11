@@ -339,10 +339,13 @@ function Chip({ icon, label, onPress }: { icon: DoodleIconName | string; label: 
   );
 }
 
+// The MAX in the header already shows "thinking". A whole animated MAX here was built and torn down mid-animation
+// with every reply, which flooded the log with Reanimated warnings (~35 per message, 11 Nov 2026).
 function Typing() {
+  const t = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-      <Max state="thinking" size={48} />
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.xs }}>
+      <ActivityIndicator size="small" color={t.ink2} />
       <T v="small" soft>Thinking…</T>
     </View>
   );

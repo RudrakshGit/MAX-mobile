@@ -221,14 +221,15 @@ export function chatStarters(state: State, now = new Date()): string[] {
   const h = now.getHours();
   const exam = nextExam(state.exams, now, 5);
   const c = state.checkins.find((x) => x.date === dateKey(now));
-  const out: string[] = [];
-  if (exam) out.push(`I'm worried about my ${exam.name} exam`);
-  if (h >= 22 || h < 4) out.push("I can't switch my brain off to sleep", "I'm thinking about tomorrow");
-  else if (h < 12) out.push("I don't feel like starting today", "Too many tasks, don't know where to begin");
-  else out.push("I can't focus on my studies", "I keep overthinking something");
-  if (c && c.mood <= 2) out.push("Today feels heavy");
-  out.push("I feel lonely in the hostel", "I keep comparing myself to others");
-  return [...new Set(out)].slice(0, 4);
+  // Two that fit the moment, then always one neutral and one happy starter (owner, 11 Nov 2026: people don't only
+  // come to MAX when they're sad, so the starters mustn't suggest that either).
+  const fit: string[] = [];
+  if (exam) fit.push(`I'm worried about my ${exam.name} exam`);
+  if (c && c.mood <= 2) fit.push("Today feels heavy");
+  if (h >= 22 || h < 4) fit.push("I can't switch my brain off to sleep", "I'm thinking about tomorrow");
+  else if (h < 12) fit.push("I don't feel like starting today", "Help me plan my day");
+  else fit.push("I can't focus on my studies", "I keep overthinking something");
+  return [...new Set(fit)].slice(0, 2).concat("Just want to chat", "Something good happened today");
 }
 
 const TOOL_NAMES: Record<string, string> = {

@@ -35,6 +35,8 @@ animation, cards, tabs or the theme switch.** Keep these rules:
   MAX website. The app only has Settings → "Share stats with college" and an optional College ID in onboarding.
 - The app also runs on the web ("Try now", served with the API on EAS Hosting). Anything native goes behind
   `isWeb` from `src/lib/platform.ts`; deploy with `npx expo export --platform web` then `eas deploy --prod`.
+- MAX's prompt (`src/lib/prompt.ts`): MAX is MAX (Mental-health Assistance and eXpert), starts neutral and never
+  assumes feelings; keep `identity()` and `NO_ASSUMPTIONS` when editing it, and re-run real-model checks.
 - Chat: after a helpline card, MAX keeps talking in care mode (`afterCrisis`, `src/lib/chat-payload.ts`); never make
   the card the only answer to follow-ups again.
 - `Chip` takes `role`: `radio` (one of a set, the default), `checkbox` (multi-pick or on/off) or `button` (an

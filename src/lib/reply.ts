@@ -3,10 +3,28 @@
 // NFD + dropping U+0300–036F removes Latin accents ("Lagtā") but leaves
 // Devanagari matras alone: those live in U+0900–097F.
 export const plain = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC").replace(/\*\*|__/g, "").replace(/^#+\s*/gm, "").replace(/\s*[([]end[)\]]\s*$/i, "").trim();
+  strayBrackets(
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC").replace(/\*\*|__/g, "").replace(/^#+\s*/gm, "").replace(/\s*[([]end[)\]]\s*$/i, ""),
+  ).trim();
+
+// A broken self-test marker ("…try kar sakte ho.]]") is dropped; a whole one ("[[test:phq9]]") is kept for the phone.
+function strayBrackets(s: string) {
+  const chips = s.match(/\[\[test:[A-Za-z0-9]+\]\]/g) ?? [];
+  const rest = s.split(/\[\[test:[A-Za-z0-9]+\]\]/).map((p) => p.replace(/\[\[|\]\]/g, ""));
+  return rest.reduce((out, p, i) => out + p + (chips[i] ?? ""), "");
+}
 
 // (only words that aren't also common English words: no "main", "to", "me", "bus")
 const HINGLISH = /\b(hai|hain|nahi|nhi|kya|kyu|kyun|mujhe|mera|meri|mere|yaar|yrr|raha|rahi|kuch|bahut|bohot|aaj|kal|lag|lagta|laga|lagi|ho|hu|hoon|hun|haan|han|gaya|gayi|karna|kar|karo|tha|thi|sab|koi|bhi|aur|toh|matlab|pata|bas|bura|accha|acha|theek|thik|tum|tu|kaise|kaisa|kaun|abhi|bhai|wala|wale|mila|hua|hui|nahin|kyunki|ab)\b/gi;
+
+/** For a student writing in Latin letters: drop any sentence the model wrote in Devanagari (it sometimes slips one
+ * in, "याद रखो, ..."), unless that would leave nothing. */
+export function latinOnly(text: string) {
+  if (!/[\u0900-\u097f]/.test(text)) return text;
+  const parts = text.match(/[^.?!\n।]+[.?!।]*\s*/g) ?? [text];
+  const kept = parts.filter((p) => !/[\u0900-\u097f]/.test(p)).join("").trim();
+  return kept || text;
+}
 
 /** Which language to answer in, decided from the student's own words. */
 export function replyLanguage(text: string): "hindi" | "hinglish" | "english" {

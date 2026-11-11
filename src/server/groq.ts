@@ -204,9 +204,12 @@ export async function tag(
   const hasDevanagari = /[\u0900-\u097F]/.test(text);
   const includeRoman = Boolean(roman && hasDevanagari);
 
-  const systemContent = includeRoman
+  // what each influence id means: with ids alone the model filed "roommate se jhagda" under friends, not hostel
+  const legend =
+    " Influence meanings: studies = classes and exams; deadlines = assignments and deadlines; career = placements, internships, career; family; friends; relationship = a partner or crush; hostel = hostel life, roommates, mess; money; health = health and body; sleep; phone = phone and social media; thoughts = their own thoughts and self-talk; loneliness; good_news = something good happened.";
+  const systemContent = legend + " " + (includeRoman
     ? "You are a tagging assistant for student journal entries. Identify the student's feelings (up to 3) and life influences (up to 2) from their text using only the allowed enum values. Also rewrite any Devanagari text into romanised Hinglish exactly as people text, e.g. 'mujhe accha lag raha hai'. Do not translate. Keep English words as they are."
-    : "You are a tagging assistant for student journal entries. Identify the student's feelings (up to 3) and life influences (up to 2) from their text using only the allowed enum values.";
+    : "You are a tagging assistant for student journal entries. Identify the student's feelings (up to 3) and life influences (up to 2) from their text using only the allowed enum values.");
 
   try {
     const res = await groqChat(
@@ -294,8 +297,8 @@ async function insightOnce(
 Write a thoughtful, 3-section reflective article on the theme: "${theme.title}".
 Format: Return strictly a valid JSON object matching the schema with exactly 3 sections.
 Sections (in this order; "tag" is exactly the word given, "heading" is your own short, specific title of 3–8 words, never a label like "Pattern/Observation"):
-- tag "Pattern": describe the pattern gently, citing at least 1 metric from signals if available.
-- tag "Reality": common humanity, why this happens in student life (exams, hostel, expectations).
+- tag "Pattern": describe what the numbers show, gently, citing at least 1 metric from signals if available.
+- tag "Reality": common humanity, why this is common in student life. Mention exams, hostel, family or other causes only if they appear in "influences".
 - tag "Try this": one 2-minute experiment the student can try today.
 
 What the numbers mean (use only these meanings, do not invent causes the data does not show):
@@ -305,10 +308,13 @@ What the numbers mean (use only these meanings, do not invent causes the data do
 - Never judge how often the student checks in (no "only 3 of 7 days"); mention it at most as "this week's check-ins".
 - Do not assume late-night screens, caffeine or habits unless a number above shows it. If a number is missing, do not mention it.
 - Name a feeling only if it is in "feelings". If the numbers look good, say so warmly; do not invent a problem.
+- With checkins7 of 1 or 2 there is no trend yet (owner, 11 Nov 2026: one check-in was called "a pattern of rising tension"): talk about "today" or "this week's check-in", never "pattern", "trend", "rising", "dip", "dropping" or "your recent data shows".
+- Under 30 minutes of phone before sleep is small: don't blame it for anything.
+- Never state a cause as fact ("X is adding to Y"); at most say two things can be linked.
 
 Rules:
-1. Each section body must be between 60 and 110 words.
-2. In the body text, cite at least 2 numbers or bands from the student's metrics if provided (e.g. "your sleep averaged 3/5", "study pressure was 4/5"), in natural conversational English.
+1. Each section body must be between 45 and 110 words.
+2. In the body text, cite at least 2 numbers or bands from the student's metrics if provided (e.g. "your sleep averaged 3/5", "study pressure was 4/5"; with a single check-in say "was", not "averaged"), in natural conversational English.
 3. NEVER use clinical or diagnostic words (depression, clinical anxiety, ADHD, disorder, suicidal, therapy, diagnosis).
 4. No medication advice.
 5. No markdown formatting, bullet points, asterisks, or emoji. Write in clean paragraphs.`;
@@ -336,7 +342,10 @@ Rules:
       12000
     );
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(JSON.stringify({ event: "insight.rejected", reason: "http", status: res.status }));
+      return null;
+    }
     const data = await res.json().catch(() => null);
     const content = data?.choices?.[0]?.message?.content;
     if (typeof content !== "string") return null;
@@ -357,7 +366,9 @@ Rules:
         return null;
       }
       const words = sec.body.trim().split(/\s+/).length;
-      if (words < 50 || words > 130) {
+      // with little data (one check-in) the model writes shorter sections, and that's fine
+      if (words < 35 || words > 130) {
+        console.warn(JSON.stringify({ event: "insight.rejected", reason: "length", words }));
         return null;
       }
       const guard = inspectOutput(sec.body);
@@ -368,7 +379,15 @@ Rules:
 
     // A personalised article must actually use the student's numbers.
     const hasNumbers = /\d/.test(parsed.sections.map((x: { body: string }) => x.body).join(" "));
-    if (!hasNumbers && (signals.checkins7 > 0 || signals.mood !== undefined)) return null;
+    if (!hasNumbers && (signals.checkins7 > 0 || signals.mood !== undefined)) {
+      console.warn(JSON.stringify({ event: "insight.rejected", reason: "no-numbers" }));
+      return null;
+    }
+    // One or two check-ins are not a trend; the prompt says so, this makes sure.
+    if (signals.checkins7 <= 2 && /\b(pattern|trend|rising|dip|dropping|recent data)\b/i.test(parsed.sections.map((x: { body: string }) => x.body).join(" "))) {
+      console.warn(JSON.stringify({ event: "insight.rejected", reason: "trend-from-one-day" }));
+      return null;
+    }
 
     // Models sometimes echo the template's labels; keep the article reading like an article.
     const TAGS = ["Pattern", "Reality", "Try this"];
@@ -383,7 +402,8 @@ Rules:
       title: parsed.title.trim(),
       sections,
     };
-  } catch {
+  } catch (e) {
+    console.warn(JSON.stringify({ event: "insight.rejected", reason: "error", message: String(e).slice(0, 120) }));
     return null;
   }
 }

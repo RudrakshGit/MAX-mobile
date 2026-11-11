@@ -11,10 +11,22 @@ test("strips markdown emphasis and headings", () => {
   assert.equal(plain("Tap the **Help** button\n## Next"), "Tap the Help button\nNext");
 });
 
-import { replyLanguage } from "./reply.ts";
+import { latinOnly, replyLanguage } from "./reply.ts";
+
+test("a Devanagari sentence slipped into a Latin-script reply is dropped", () => {
+  assert.equal(
+    latinOnly("Thoda break lena zaroori hai. याद रखो, tumhari himmat hi tumhe aage le jaati hai."),
+    "Thoda break lena zaroori hai.",
+  );
+  assert.equal(latinOnly("All in English."), "All in English.");
+  assert.equal(latinOnly("सब हिंदी में है।"), "सब हिंदी में है।");
+});
 
 test("strips Latin accents but keeps Devanagari intact", () => {
   assert.equal(plain("Lagtā hai tum akelā ho"), "Lagta hai tum akela ho");
+  // a broken test marker is dropped, a whole one kept
+  assert.equal(plain("ek minute ki breathing try kar sakte ho.]]"), "ek minute ki breathing try kar sakte ho.");
+  assert.equal(plain("Try the PHQ-9. [[test:phq9]]"), "Try the PHQ-9. [[test:phq9]]");
   // a model once ended a reply with "(End)"
   assert.equal(plain("chalo grounding try karte hain?(End)"), "chalo grounding try karte hain?");
   assert.equal(plain("मुझे नींद नहीं आती"), "मुझे नींद नहीं आती");

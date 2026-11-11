@@ -667,3 +667,32 @@ one.
   and the chat care-mode fix. Checked on production: CORS preflight 204, a follow-up after a helpline card gets a
   care reply explaining Tele-MANAS, the web app opens and chats.
 - The college staff screens are on the website now (`../M.A.X--Major-Project`, see its HANDOFF.md).
+
+### Follow-up: chat care mode, MAX's identity, no assumptions, AI journal checks — 11 Nov 2026 night (Claude, owner asked)
+- **Care mode ends** (owner's phone: after "Yes I feel safe" every reply still pushed helplines). `src/lib/chat-payload.ts`:
+  care mode lasts at most two replies after a helpline card, ends at once when the student says they're safe
+  ("I feel safe", "safe hu", "mazak tha"; "safe nahi hu" doesn't count), and doesn't come back for that card. The
+  server scores only what the student said after the last card (`userTextsAfterCard`), so an old message can't bring
+  the card back; a new crisis message still gets one. Tested (9 cases) and with the real model.
+- **MAX is MAX** (owner): the prompt says MAX is the companion itself, short for "Mental-health Assistance and
+  eXpert", answers to a renamed name, says who made it and what powers it only when asked (`identity()` in
+  `src/lib/prompt.ts`, used by chat and journal reflections).
+- **No assumptions** (owner: "blah" got "you seem sad"): MAX starts neutral, matches the student's tone, names a
+  feeling only as a question, treats a fact ("kal exam hai") as a fact, never makes up facts or app features, and
+  uses the check-in context only when the student brings up the same thing. Gender-neutral Hinglish, no "raha/rahi".
+  Chat starters always include "Just want to chat" and "Something good happened today". Checked with the real model:
+  "blah", "meh", "bored", "lol", good news, with and without a low-mood week in the context; identity, maker,
+  "are you ChatGPT", a jailbreak, medicines, diagnosis, an off-topic question, a feature question.
+- **Journal AI** (real model, and in the app on the emulator): tags in 0.3–2 s (the phone now waits up to 6 s, was
+  2.5 s, so tags were often skipped); influence meanings added, so "roommate se jhagda" is tagged hostel, not friends;
+  reflections in the student's script (a Devanagari sentence in a Latin reply is dropped) and with "tum".
+  Voice to text: English, Hindi and Hinglish clips through the real route, shown in romanised Hinglish. On the
+  emulator the microphone gets no sound (the host's mic isn't shared), so "Didn't catch that" was the path seen there;
+  a real recording needs the owner's phone.
+- **Daily reflection**: one check-in was called "a pattern of rising tension"; with 1–2 check-ins it now says
+  "today" and a check rejects trend words; causes only from the student's own tags; rejections are logged.
+- Smaller: typing indicator in Talk is a spinner (the animated MAX there logged ~35 Reanimated warnings per message,
+  now ~16 from the header MAX); the breathing Stop is centred; "Talk it through with {name}"; a shared hourly cap of 20
+  on public college applications (the per-IP limit is per server instance).
+- Checks: `npm test` 366/366, `tsc` clean. Server deployed to production. APK `Major_Project/apk/max-phone-1.8.4.apk`
+  (1.8.4 / 16), SHA-256 `09882031eba90ae26409a1a7f8fcc97529418c0085a7e6e2a06d11820d6144fa`, also on the website's download page.
