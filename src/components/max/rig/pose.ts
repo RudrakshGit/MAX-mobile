@@ -1,4 +1,4 @@
-// MAX's pose: plain numbers per body part, in the 180×172 drawing's units (docs/plan/M16-motion-cards-ia.md).
+// MAX's pose: plain numbers per body part, in the 180×172 drawing's units (docs/history.md).
 import type { EaseName } from "./motion.ts";
 
 /**

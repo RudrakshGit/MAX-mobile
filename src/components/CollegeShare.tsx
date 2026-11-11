@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { space, useTheme } from "@/lib/theme";
 import { Button, Field, T } from "@/lib/ui";
 
-// Settings → Share stats with college (docs/plan/M15, simplified 11 Nov 2026). The College ID comes from the college;
+// Settings → Share stats with college (docs/history.md, simplified 11 Nov 2026). The College ID comes from the college;
 // entering it and tapping Share is the consent. Stopping deletes what was shared.
 
 export const COLLEGE_NOTE = "Your daily check-in numbers are added to your college's anonymous totals. Never your name, journal or chats.";

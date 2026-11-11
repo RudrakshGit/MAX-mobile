@@ -11,7 +11,7 @@ import { Frame } from "@/ui/sketch/Frame";
 import { SCENES, type Kit, type Move, type SceneName } from "./scenes";
 import { useShelfFocus } from "./focus";
 
-// A card picture of MAX's world (docs/plan/M16, decisions 11–12): one still drawing on the topic's soft tint, plus a
+// A card picture of MAX's world (docs/history.md, M16): one still drawing on the topic's soft tint, plus a
 // couple of small parts that move only while the card is the one in view (`active`, see focus.tsx), like a feed that
 // plays the video you stop on (owner, 11 Nov 2026). Each time it comes into view it plays once (2–4 s) and rests.
 // Reduce motion or "MAX moves: still" shows the final picture.

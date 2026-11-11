@@ -1,7 +1,7 @@
 import { apiFetch } from "./api";
 import { getState, update, type CollegeLink } from "./store";
 
-// The student side of sharing with a college (docs/plan/M15): look up a College ID, share, stop. The staff dashboard
+// The student side of sharing with a college (docs/history.md): look up a College ID, share, stop. The staff dashboard
 // moved out of the app (11 Nov 2026, owner): it will live on the MAX website, on the same server routes.
 
 // ---- students ----

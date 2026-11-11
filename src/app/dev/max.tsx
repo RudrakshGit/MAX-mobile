@@ -11,7 +11,7 @@ import { space, useTheme } from "@/lib/theme";
 import { Page, Section, T } from "@/lib/ui";
 
 // Developer builds only: MAX's clips, played live and frozen as a filmstrip (six moments), so motion can be checked from
-// screenshots (docs/plan/M16-motion-cards-ia.md, "How an agent checks motion"). Release builds redirect home.
+// screenshots (docs/history.md, "How an agent checks motion"). Release builds redirect home.
 
 const STATES: MaxState[] = ["idle", "wave", "thinking", "listening", "breathe", "cheer", "care", "empty", "sleep"];
 const NAMES = [...(Object.keys(CLIPS) as ClipName[]), "blink" as const];

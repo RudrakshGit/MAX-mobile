@@ -1,7 +1,7 @@
 import { INFLUENCES } from "../content/feelings.ts";
 import { noisyMean, noisyShare } from "./pulseNoise.ts";
 
-// Turns the raw totals of one college's shared check-ins into what its staff may see. Rules (docs/plan/M15):
+// Turns the raw totals of one college's shared check-ins into what its staff may see. Rules (docs/history.md):
 // nothing from fewer than K students; subgroups under K hidden, plus one more when a single one is hidden so it
 // can't be worked out from the rest; journal categories only when at least K_SOURCE students picked them; every
 // published number carries noise sized to one student's influence; student counts rounded down to 5.

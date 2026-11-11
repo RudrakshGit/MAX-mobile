@@ -62,7 +62,7 @@ export async function askCompanion(history: Msg[], companion: string): Promise<R
 }
 
 /**
- * Only after the student chose to share with their college (docs/plan/M15). Sends a random id, the day's three
+ * Only after the student chose to share with their college (docs/history.md). Sends a random id, the day's three
  * numbers, the journal categories picked that day and, if given, the year of study: never text or a name.
  */
 export function sendPulse(c: CheckIn) {

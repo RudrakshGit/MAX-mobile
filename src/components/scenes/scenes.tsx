@@ -3,7 +3,7 @@ import { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
 import type { TintName } from "@/lib/theme";
 import { MaxFigure, type FigureColors } from "./MaxFigure";
 
-// MAX's world: one picture per card, MAX acting out the card's topic (docs/plan/M16, decisions 11–12). Every scene is
+// MAX's world: one picture per card, MAX acting out the card's topic (docs/history.md, M16). Every scene is
 // drawn in a 200×150 box: one still drawing, plus at most two small "moves" that play once when the card first shows.
 
 export interface Kit {

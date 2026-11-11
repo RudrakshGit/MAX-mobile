@@ -1,6 +1,6 @@
 // Merging the phone's state with the cloud copy. Pure (no React Native imports) so Node can test it.
 //
-// Rules (docs/plan/M11-login-and-sync.md, updated Nov 2026):
+// Rules (docs/history.md, updated Nov 2026):
 //  - A phone that has not finished onboarding takes the cloud copy (keeping its own per-device fields).
 //  - Lists merge by key, newest wins, and anything in either side's tombstones is removed.
 //  - Settings and other single values come from this phone.

@@ -2,7 +2,7 @@ import { dateKey, usualCheckinTime } from "./personal.ts";
 import type { State } from "./store.ts";
 
 // Which reminders to schedule for the next week. Pure, so it can be tested; reminders.ts does the scheduling.
-// Rules (docs/v2-features.md rule 3, and the reminders research in docs/audit):
+// Rules (owner rule: at most one reminder a day; docs/history.md):
 // - at most one notification a day, at a time the student picked, never guilt or streak wording;
 // - skipped on days they've already checked in;
 // - if they stop checking in, MAX reminds less (every other day after 3 quiet days) and stops after a week;

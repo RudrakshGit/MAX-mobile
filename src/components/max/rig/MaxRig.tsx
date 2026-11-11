@@ -1,6 +1,6 @@
 // MAX drawn as a rig: every part is its own small drawing on its own layer, moved only by view transforms on the
 // UI thread, so a blink or a wave never redraws the rest of MAX (react-native-svg redraws a whole drawing on any
-// animated prop change). docs/plan/M16-motion-cards-ia.md, decisions 2 and 4a.
+// animated prop change). docs/history.md, decisions 2 and 4a.
 import React, { memo } from "react";
 import { View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";

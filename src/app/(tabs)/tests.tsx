@@ -38,7 +38,7 @@ const categoryIcons: Record<string, DoodleIconName> = {
   phone: "phone",
 };
 
-// Each check gets a picture of MAX's world that fits it (docs/plan/M16, decision 11), not a generic figure.
+// Each check gets a picture of MAX's world that fits it (docs/history.md, M16), not a generic figure.
 const instrumentScenes: Record<string, SceneName> = {
   phq9: "kind",
   gad7: "overthinking",

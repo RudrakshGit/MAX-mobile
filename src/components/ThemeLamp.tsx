@@ -6,7 +6,7 @@ import { Max } from "@/components/max";
 import { switchTheme } from "@/lib/theme-switch";
 import { isDarkTheme, stroke, useTheme } from "@/lib/theme";
 
-// Settings → Appearance (docs/plan/M16-motion-cards-ia.md, decision 9): a small lamp beside MAX. Picking light or
+// Settings → Appearance (docs/history.md, M16): a small lamp beside MAX. Picking light or
 // dark, MAX reaches up and tugs the lamp's cord, and the new theme closes in on the lamp. A short moment in the row,
 // not a full-screen film.
 

@@ -1,109 +1,76 @@
-# Setup, from zero
+# Setup
 
-Written for a first app project on a Mac. Every step is free and needs no credit card.
+Everything here is free and needs no credit card. Written for a Mac.
 
-## 1. Tools on the Mac (one time)
+## 1. Tools (one time)
 
-| Tool | Why | Install |
+| Tool | For | Install |
 | --- | --- | --- |
-| Node.js 20+ | Runs Expo and the tests | `brew install node` |
-| Watchman | Lets Expo notice file changes quickly | `brew install watchman` |
-| JDK 17 | Only for building the APK on your own Mac | `brew install openjdk@17` |
-| Android command-line tools | Only for building the APK on your own Mac | `brew install --cask android-commandlinetools` |
-
-Check: `node -v` should print v20 or higher.
-
-## 2. The phone
-
-Install **Expo Go for SDK 57** on your Android phone from <https://expo.dev/go>. The Play Store copy can lag behind; the project only opens in the matching SDK. Keep the phone and Mac on the same Wi-Fi.
-
-On iPhone, the App Store's Expo Go is stuck on an older SDK, so use the Android phone or the APK.
-
-## 3. Run the app
-
-```bash
-npm install
-cp .env.example .env.local
-```
-
-Open `.env.local` and paste your key from <https://console.groq.com/keys> after `GROQ_API_KEY=`. Never commit this file (it is in `.gitignore`), and never paste the key into a chat or a screenshot.
-
-```bash
-npx expo start
-```
-
-Scan the QR code with Expo Go. Edits appear on the phone as you save.
-
-- Different networks, or the QR won't connect: `npx expo start --tunnel`
-- Changes not showing: stop with Ctrl+C, run `npx expo start -c`. Don't set `CI=1`; it turns file watching off.
-
-In Expo Go everything works except automatic screen time, which needs the APK.
-
-## 4. Put the chat server online (EAS Hosting)
-
-The phone talks to the API routes in `src/app/api/`. During development the Expo dev server runs them; for the APK they need a public address.
-
-```bash
-npm install -g eas-cli
-eas login                      # free account at expo.dev
-eas init                       # links this folder to an Expo project
-eas env:create --environment production --name GROQ_API_KEY --value "<your key>" --visibility sensitive
-npx expo export --platform web
-eas deploy --prod --environment production
-```
-
-`eas deploy` prints a URL like `https://max-companion.expo.app`. Test it:
-
-```bash
-curl -X POST https://<your-url>/api/chat -H 'content-type: application/json' -d '{"messages":[{"role":"user","text":"hi"}]}'
-```
-
-Optional Google backup and college sharing: create a free database at <https://neon.tech>, then add `DATABASE_URL` the same way as the key, plus `GOOGLE_WEB_CLIENT_ID` (M11) and `ADMIN_EMAILS` (your Google email, to review college registrations; M15), and deploy again. Tables are created on first use.
-
-## 5. Build the APK
-
-Tell the app where the server lives. In `eas.json`, under `build.preview`, add:
-
-```json
-"env": { "EXPO_PUBLIC_API_URL": "https://<your-url>" }
-```
-
-**Option A, in the cloud (easiest):**
-
-```bash
-eas build -p android --profile preview
-```
-
-It finishes with a download link and a QR code. Share that link with classmates.
-
-**Option B, on this Mac:**
+| Node.js 20+ | Expo, tests | `brew install node` |
+| JDK 17 | Building the APK | `brew install openjdk@17` |
+| Android command-line tools | Emulator and APK | `brew install --cask android-commandlinetools` |
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
-EXPO_PUBLIC_API_URL=https://<your-url> npx expo prebuild --platform android --clean
-cd android && EXPO_PUBLIC_API_URL=https://<your-url> ./gradlew assembleRelease
 ```
 
-The APK lands in `android/app/build/outputs/apk/release/app-release.apk`. It is signed with a debug key: fine for sharing, not for the Play Store.
-
-That APK carries both ARM architectures. To halve the download, build one per architecture and share the right one:
+## 2. Run it
 
 ```bash
-./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a     # almost every phone from 2019 on
-./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a   # older 32-bit budget phones
+npm install
+cp .env.example .env.local     # add GROQ_API_KEY from https://console.groq.com/keys
 ```
 
-Not sure which a phone needs? Install the arm64 one; if Android says the app isn't compatible, use the armeabi-v7a one.
+- **Web (quickest):** `npx expo start --web`. This is the demo mode.
+- **Android emulator:** `npx expo run:android` builds a dev build (MAX has its own native modules, so Expo Go is not
+  enough) and starts the dev server; the API routes run locally.
 
-Without `EXPO_PUBLIC_API_URL` the APK still works, but chat says it isn't connected. Bump `version` and `android.versionCode` in `app.json` for every APK you hand out, so the Settings footer shows which build someone is running.
+On the emulator, check smoothness on a real phone instead: the emulator GPU is slow, and its mic gets no Mac audio.
 
-## 6. Installing the APK on a phone
+## 3. Check before you commit
 
-Send the `.apk` (WhatsApp, Drive, or the EAS link). On the phone, open it and allow "Install unknown apps" for the app you opened it from.
+```bash
+npm run verify     # must end with VERIFY: PASS
+```
 
-For automatic screen time: MAX → Explore → Settings → **Allow usage access** → find MAX → switch on "Permit usage access".
+Optional server checks against a real Postgres: see the header of `scripts/college-server-check.mts` (in-process
+PGlite, no Docker) and `scripts/m11-server-check.mts` (backup and sync). `npm run check-links` tests every resource link.
 
-## Publishing
+## 4. Deploy the API and web demo (EAS Hosting)
 
-Google Play charges a one-time $25 registration, and new personal accounts must run a closed test with 12 testers for 14 days before going public. Sharing the APK directly is free.
+One time: `npm install -g eas-cli`, `eas login`, then add server secrets as EAS environment variables
+(`eas env:create --environment production --name GROQ_API_KEY --visibility sensitive`, and the same for
+`DATABASE_URL`, `GOOGLE_WEB_CLIENT_ID`, `ADMIN_EMAILS`). Type the values yourself; never put them in a file in the repo.
+
+```bash
+rm -rf dist && npx expo export --platform web
+eas deploy --prod --environment production
+```
+
+It serves <https://max-companion.expo.app>. A new route can answer 404 for about 20 seconds while the CDN catches up.
+Database tables are created on first use.
+
+## 5. Build the phone APK
+
+1. Bump the version in **both** `app.json` (`version`, `android.versionCode`) and `android/app/build.gradle`
+   (`versionName`, `versionCode`). Settings shows it at the bottom.
+2. Build:
+
+```bash
+bash scripts/build-phone-apk.sh
+```
+
+It builds a release arm64 APK pointed at the deployed server and refuses one that still points at the emulator. Output:
+`android/app/build/outputs/apk/release/app-release.apk`. Copy it to `../apk/max-phone-<version>.apk`, and to the
+website's `public/downloads/` when publishing it there.
+
+The APK is signed with a debug key: fine for sharing, not for the Play Store. Cloud alternative:
+`eas build -p android --profile preview`.
+
+## 6. Install on a phone
+
+Send the `.apk` (WhatsApp, Drive, the website). Open it and allow "Install unknown apps". For automatic screen time:
+Settings → Privacy & lock → Allow usage access → switch on MAX.
+
+Google sign-in needs the app's signing certificate (SHA-1) registered in the Google Cloud console for `com.eg18.max`.

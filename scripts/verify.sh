@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Every rule the briefs assert is enforced here. Run before reporting any milestone done:
+# The repo rules from AGENTS.md, enforced. Run before saying a change is done:
 #   npm run verify
 # A failing check is a real problem: fix the code, never weaken this script without the owner's OK.
 set -u

@@ -1,6 +1,6 @@
 import type { Sql } from "./db.ts";
 
-// Validation and permissions for college registration (docs/plan/M15). Pure helpers, so they can be tested.
+// Validation and permissions for college registration (docs/history.md). Pure helpers, so they can be tested.
 
 export const ROLES = ["counsellor", "psychologist", "wellness", "faculty", "head"] as const;
 export type StaffRole = "owner" | "staff";

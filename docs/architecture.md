@@ -3,65 +3,75 @@
 ## The shape of it
 
 ```
-Phone (Expo / React Native)                         Server (Expo Router API routes on EAS Hosting)
-───────────────────────────                         ──────────────────────────────────────────────
-screens in src/app/                                  POST /api/chat
-  │                                                    ├─ validate, rate-limit, redact email/phone
-  ├─ src/lib/store.ts  ← AsyncStorage (all data)      ├─ classifyRisk()  (same file as the phone)
-  ├─ src/safety/classifier.ts  ← runs BEFORE send     ├─ in parallel:
-  │     crisis → helpline card, nothing sent          │     modelRisk()  gpt-oss-safeguard-20b
-  ├─ src/lib/api.ts  ── text + weekly numbers ──────▶ │     reply        gpt-oss-120b
-  │                                                    ├─ crisis from either → { kind: "crisis" }
-  │                                                    ├─ plain() + oneQuestion() + inspectOutput()
-  │ ◀──────────────── { kind, text, distress } ────── └─ reply
-  │
-  ├─ modules/usage-stats (Kotlin) → screen on/off, per-app minutes
-  │     └─ src/lib/screen-time.ts (pure maths, tested)
-  ├─ opt-in college sharing: numbers + random id ────▶ /api/pulse → Neon; staff read /api/college/dashboard (k ≥ 10)
-  └─ optional Google backup (src/lib/cloud.ts) ───────▶ /api/auth/google, /api/sync → Neon
+Android app / web demo (this repo)              Server: API routes in src/app/api/ (EAS Hosting)
+──────────────────────────────────              ────────────────────────────────────────────────
+screens in src/app/                             POST /api/chat
+  ├─ src/lib/store.ts ← AsyncStorage (all data)   ├─ validate, rate-limit, redact email/phone
+  ├─ classifyRisk() before sending                ├─ classifyRisk() again (same file as the phone)
+  │    crisis → helpline card, nothing sent       ├─ in parallel: modelRisk() and the reply (Groq)
+  ├─ chatPayload() → messages + afterCrisis ────▶ ├─ crisis from either → { kind: "crisis" }
+  │                                               ├─ plain() · latinOnly() · oneQuestion() · inspectOutput()
+  │ ◀──────────── { kind, text, distress, care } ─┘
+  ├─ journal tags, voice, reflection ──────────▶ /api/tag, /api/transcribe, /api/chat (with consent)
+  ├─ daily insight (numbers only) ──────────────▶ /api/insight
+  ├─ optional Google backup ────────────────────▶ /api/auth/google, /api/sync, /api/account → Neon
+  └─ College ID set → daily numbers ────────────▶ /api/college/join, /api/pulse → Neon
+
+Website (separate repo, Vercel) ────────────────▶ /api/college/apply, /dashboard, /admin (bearer token)
+  /try embeds the web demo in an iframe
 ```
 
-The phone is the database. The server keeps only what the student opted into: the Google backup (M11) and the
-anonymous numbers shared with a verified college (M15, `docs/plan/M15-college-dashboard.md`).
+The phone is the database. The server keeps only what the student opted into: the Google backup and anonymous
+numbers shared with a verified college. Chat text passes through and is not stored.
 
 ## Folders
 
 | Path | Owns |
 | --- | --- |
-| `src/app/(tabs)/` | Today, Talk, Journal, Insights, Explore |
-| `src/app/` | Pushed screens: onboarding, help, settings, campus, check-ups, lessons, tools, new journal entry |
-| `src/app/api/` | chat, tag, transcribe, insight, auth, sync, account, delete-account, pulse, college. Server only; secrets never reach the app bundle |
-| `src/app/college/` | College staff: sign-in, registration, dashboard, settings, admin review |
-| `src/server/` | Database, sessions, Google token check, college validation and the dashboard privacy rules |
-| `src/safety/` | Deterministic classifier, output guard, model risk check, golden test set |
-| `src/lib/` | Store, theme, shared UI, API client, backup/sync, college client, personalisation, reminder plan, insights, reply shaping, screen-time maths |
-| `src/content/` | Check-up instruments and scoring, lessons and their sources |
-| `modules/usage-stats/` | Android-only Expo module (Kotlin). `null` in Expo Go and on iOS, so the feature hides itself |
+| `src/app/(tabs)/` | Today (`index`), Explore, Talk, Journal. `learn`, `tools`, `tests` are hidden redirects for old links |
+| `src/app/` | Pushed screens: onboarding, help, check-in insight, tools, courses, self-checks, journal entry, sounds, profile and settings |
+| `src/app/api/` | Server routes. Secrets never reach the app bundle |
+| `src/server/` | Groq calls, database, sessions, Google token check, rate limits, college rules and noise, CORS |
+| `src/safety/` | Classifier, output guard, model risk check, golden (91) and holdout (79) test sets |
+| `src/lib/` | Store, persistence, theme, prompt, reply shaping, chat payload, insights, plan, reminders, sync, college client |
+| `src/components/` | MAX rig (`max/`), card scenes (`scenes/`), settings pages, shared pieces |
+| `src/ui/` | Design kit: sketch outlines, fields, wheels, chips, avatars, doodle icons |
+| `src/content/` | Self-check instruments and scoring, courses, reads, resources, music |
+| `src/features/` | Voice notes, sounds, account |
+| `modules/` | Kotlin: `usage-stats` (screen time) and `theme-reveal` (ink theme switch). Absent on web, so features hide |
 
-## Decisions and why
+## Web demo
 
-| Decision | Why |
-| --- | --- |
-| Expo + React Native, Android first | One TypeScript codebase; Expo Go means no Android Studio to start; most students use budget Android phones |
-| Data on the phone, no accounts | The strongest privacy promise is not holding the data. Also no auth to build or break |
-| API routes inside the app project | The safety classifier is one file shared by phone and server, so there's no copy to drift |
-| Groq | Free, fast on weak networks, and does not train on API data |
-| Replies generated in full, not streamed | The output guard must see the whole reply before the student does |
-| Tool suggestions chosen by code | Tested rules are reliable; tags asked of a model are forgotten or invented |
-| Hand-drawn SVG chart | One small chart doesn't justify a charting library on a budget phone |
-| Deep imports for fonts and icons | Package indexes bundle every weight and every icon set (~8 MB saved) |
-| Only ARM builds, minified, resources shrunk | x86 is only for emulators; keeps the APK small |
+The same code exported with `npx expo export --platform web` and served by EAS Hosting next to the API. `isWeb`
+(`src/lib/platform.ts`) marks it a demo: auto-onboarded, 20 chats a day, settings limited to Get app, Appearance and
+Your data. `DemoBar` shows only when the page is not inside the website's iframe.
+
+EAS rewrites the `Origin` header, so the college routes allow `*` and accept only bearer tokens, never cookies
+(`src/server/cors.ts`).
 
 ## Data on the phone
 
-One versioned envelope, `{ version, state }`, under `max.state` in AsyncStorage: settings, check-ins, journal entries, chat messages (last 300), check-up results, reframes and if-then plans. `update()` writes it through a single queue so writes can't land out of order; `useStore(select)` reads it with `useSyncExternalStore`.
+One versioned envelope, `{ version, state }`, saved through `src/lib/persist.ts` (chunked, crash-safe). `update()`
+writes through one queue; `useStore(select)` reads with `useSyncExternalStore`. `src/lib/schema.ts` validates every
+field and drops bad rows, so a new build opens an old install's data; bump `SCHEMA_VERSION` and add a step in
+`parse()` when the shape changes. Unreadable data is kept aside, never overwritten.
 
-Reading is defensive (`src/lib/schema.ts`, tested in `schema.test.ts`): every field is validated and bad rows are dropped, so a new build can open an old install's data. The previous build's bare `max.v1` blob is migrated once. A blob that can't be read, or that a newer build wrote, is kept under `max.corrupt` instead of being overwritten. Bump `SCHEMA_VERSION` when the shape changes and add a migration step in `parse()`.
-
-`android:allowBackup` is off, so Google's cloud backup can't restore a previous install's data after a reinstall. Updating the APK in place keeps the data (that is what an update should do); a clean slate is Settings → Delete everything, or uninstall. Settings shows the build number at the bottom so you can tell which build is running.
-
-Export shares the state; delete wipes storage and cancels scheduled reminders.
+`android:allowBackup` is off. Updating the APK keeps data; Settings → Delete everything (or uninstall) clears it.
 
 ## What the model is told
 
-The system prompt (`src/lib/prompt.ts`) sets tone and method (CBT-informed, one question, the student's own language) and the never-list. When "What your companion knows" is on, it adds `wellbeingContext()`: last-7-day averages, latest check-up bands and up to three of the student's if-then plans. Journal text is never included. The language to reply in is decided in code (`replyLanguage()`), not left to the model.
+`src/lib/prompt.ts` builds the system prompt: `identity(name)`, `NO_ASSUMPTIONS`, tone and method (one gentle
+question, the student's own language decided in code by `replyLanguage()`), and the never-list. With "What MAX knows"
+on (named after the companion), it adds weekly averages, latest self-check bands and up to three of the student's own plans, marked as background
+only. Journal text is never included. In care mode it adds the after-crisis instructions.
+
+## Decisions
+
+| Decision | Why |
+| --- | --- |
+| Expo + React Native, Android first | One TypeScript codebase; most students use budget Android phones |
+| API routes in the app project | The classifier is one file shared by phone and server, so it can't drift |
+| Groq | Free, fast on weak networks, no training on API data |
+| Replies not streamed | The output guard must see the whole reply first |
+| Tool suggestions chosen by code | Tested rules beat tags a model may forget or invent |
+| Deep imports for fonts, ARM-only minified builds | Keeps the APK small |

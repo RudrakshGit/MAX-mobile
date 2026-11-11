@@ -17,7 +17,7 @@ import { WALK, nextGesture, rng } from "./rig/motion";
 import type { Face, Marks } from "./rig/pose";
 import { useRigPlayer } from "./rig/useRigPlayer";
 
-// MAX, the companion (docs/plan/M16-motion-cards-ia.md). A rig of separate parts acting pose to pose on the UI
+// MAX, the companion (docs/history.md). A rig of separate parts acting pose to pose on the UI
 // thread: calm timing curves, holds after every action, no bounce. Screens describe what MAX is doing (`state`,
 // `behavior`, `walking`, `sleeping`, `breath`...); this component turns that into clips.
 

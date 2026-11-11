@@ -1,4 +1,4 @@
-// Where MAX's parts sit and pivot, in the 180×172 drawing (docs/plan/M16-motion-cards-ia.md, decision 2).
+// Where MAX's parts sit and pivot, in the 180×172 drawing (docs/history.md, decision 2).
 // Every part is its own small drawing on a layer the size of MAX plus padding, so raised arms, comic marks and
 // lifted feet never get cut off, and moving a part only moves its layer (no redraw).
 

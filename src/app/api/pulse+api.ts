@@ -4,7 +4,7 @@ import { K } from "@/server/collegeStats";
 import { limited } from "@/server/rateLimit";
 import { acceptableDay, noisyMean } from "@/server/pulseNoise";
 
-// Sharing with your college (docs/plan/M15): opt-in, anonymous, aggregate only. A phone sends a random id, the
+// Sharing with your college (docs/history.md): opt-in, anonymous, aggregate only. A phone sends a random id, the
 // college it joined, and today's three numbers, optional year of study and journal categories. Never text.
 
 const level = (n: unknown) => (Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 5 ? (n as number) : null);

@@ -1,4 +1,4 @@
-// MAX's motion rules (docs/plan/M16-motion-cards-ia.md, "Animation approach"). Plain data and pure functions so the
+// MAX's motion rules (docs/history.md, "Animation approach"). Plain data and pure functions so the
 // clips can be unit-tested with `node --test`; every function used on the UI thread is a worklet.
 
 /** Cubic-bezier control points. Every curve keeps y within [0, 1], so nothing overshoots its target. */

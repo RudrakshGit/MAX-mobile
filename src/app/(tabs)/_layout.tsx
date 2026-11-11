@@ -11,7 +11,7 @@ import { useReducedMotionSafe } from "@/components/max/useReducedMotionSafe";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Four tabs (docs/plan/M16, owner's answer 1): Today, Explore (tools, courses, reading, sounds, self-checks), Talk and
+// Four tabs (docs/history.md, owner's answer 1): Today, Explore (tools, courses, reading, sounds, self-checks), Talk and
 // Journal. Profile and Settings open from the avatar on Today; Help sits in the same place on every screen.
 const tabs: { name: string; title: string; icon: DoodleIconName }[] = [
   { name: "index", title: "Today", icon: "home" },

@@ -12,7 +12,7 @@ import { useStore } from "@/lib/store";
 import { space } from "@/lib/theme";
 import { Row, Screen, T } from "@/lib/ui";
 
-// Explore: every self-help thing in one place (docs/plan/M16, owner's answer 1): quick tools, courses, things to read,
+// Explore: every self-help thing in one place (docs/history.md, owner's answer 1): quick tools, courses, things to read,
 // watch and listen to, and the self-checks. Each card is a picture of MAX's world, a short title and one detail.
 
 const TOOLS: { id: string; href: string; scene: SceneName; title: string; meta: string }[] = [

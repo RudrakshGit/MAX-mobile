@@ -153,7 +153,7 @@ export type State = {
   lastOpenAt?: number;
   /** a campus counsellor or mentor, shown on the Help screen */
   counsellor?: { name: string; phone: string };
-  /** the college this phone shares anonymous check-ins with (docs/plan/M15); its presence is the consent */
+  /** the college this phone shares anonymous check-ins with (docs/history.md); its presence is the consent */
   college?: CollegeLink;
 };
 

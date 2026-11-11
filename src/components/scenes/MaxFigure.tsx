@@ -4,7 +4,7 @@ import { BODY_PAPER_FILL, BODY_PATH, MaxBlush, MaxBrows, MaxEyes, MaxMouth, WALK
 import { ARM, FEET, FLANK_FILL, FLANK_LEFT, FLANK_RIGHT } from "@/components/max/rig/geometry";
 import type { BrowsKind, EyesKind, MouthKind } from "@/components/max/rig/pose";
 
-// MAX as one still drawing for card pictures (docs/plan/M16, decision 11): the same parts as the rig, in a pose, inside
+// MAX as one still drawing for card pictures (docs/history.md, M16): the same parts as the rig, in a pose, inside
 // the scene's own Svg. A full rig per card would be ten drawings per card; a scene stays one drawing plus at most a
 // couple of small moving marks.
 
