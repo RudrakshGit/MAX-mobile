@@ -18,6 +18,8 @@ export interface FrameProps {
   shadowColor?: string;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
+  /** The expected size, when the caller knows it: the outline draws in the first pass instead of after onLayout. */
+  size?: { w: number; h: number };
 }
 
 export function Frame({
@@ -34,9 +36,10 @@ export function Frame({
   shadowColor,
   style,
   children,
+  size,
 }: FrameProps) {
   const t = useTheme();
-  const [layout, setLayout] = useState({ w: 0, h: 0 });
+  const [layout, setLayout] = useState(() => (size ? { w: Math.round(size.w), h: Math.round(size.h) } : { w: 0, h: 0 }));
 
   const finalSeed = seed ?? seedFrom(id);
   const onLayout = (e: LayoutChangeEvent) => {

@@ -17,10 +17,12 @@ screens in src/app/                                  POST /api/chat
   │
   ├─ modules/usage-stats (Kotlin) → screen on/off, per-app minutes
   │     └─ src/lib/screen-time.ts (pure maths, tested)
-  └─ opt-in pulse: 3 numbers + random id ───────────▶ POST/GET /api/pulse → Neon (k ≥ 10)
+  ├─ opt-in college sharing: numbers + random id ────▶ /api/pulse → Neon; staff read /api/college/dashboard (k ≥ 10)
+  └─ optional Google backup (src/lib/cloud.ts) ───────▶ /api/auth/google, /api/sync → Neon
 ```
 
-There is no login. The phone is the database; the server keeps nothing except the optional campus pulse.
+The phone is the database. The server keeps only what the student opted into: the Google backup (M11) and the
+anonymous numbers shared with a verified college (M15, `docs/plan/M15-college-dashboard.md`).
 
 ## Folders
 
@@ -28,9 +30,11 @@ There is no login. The phone is the database; the server keeps nothing except th
 | --- | --- |
 | `src/app/(tabs)/` | Today, Talk, Journal, Insights, Explore |
 | `src/app/` | Pushed screens: onboarding, help, settings, campus, check-ups, lessons, tools, new journal entry |
-| `src/app/api/` | `chat+api.ts`, `pulse+api.ts`. Server only; secrets never reach the app bundle |
+| `src/app/api/` | chat, tag, transcribe, insight, auth, sync, account, delete-account, pulse, college. Server only; secrets never reach the app bundle |
+| `src/app/college/` | College staff: sign-in, registration, dashboard, settings, admin review |
+| `src/server/` | Database, sessions, Google token check, college validation and the dashboard privacy rules |
 | `src/safety/` | Deterministic classifier, output guard, model risk check, golden test set |
-| `src/lib/` | Store, theme, shared UI, API client, prompt, insights, suggestions, reply shaping, reminders, screen-time maths |
+| `src/lib/` | Store, theme, shared UI, API client, backup/sync, college client, personalisation, reminder plan, insights, reply shaping, screen-time maths |
 | `src/content/` | Check-up instruments and scoring, lessons and their sources |
 | `modules/usage-stats/` | Android-only Expo module (Kotlin). `null` in Expo Go and on iOS, so the feature hides itself |
 

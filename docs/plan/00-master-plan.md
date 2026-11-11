@@ -54,6 +54,8 @@ Failure modes the spec implies that the per-task tests could miss, most likely f
 | M12 | MAX character + avatars + illustrations | M03 | M | Antigravity (+ owner drawing) |
 | M13 | Motion pass + finish review + DESIGN.md | M12 | M | Antigravity, then Claude review |
 | M14 | Release build | all | S | Antigravity + owner |
+| M15 | College registration, counsellor dashboard, opt-in sharing | M11 | L | Claude (done 4 Nov 2026; needs owner's server set-up) |
+| M16 | MAX rig and calm motion, new theme switch, MAX scenes on cards, four tabs, less text ([brief](M16-motion-cards-ia.md)) | M12, M13 | L | Claude (done 7 Nov 2026; real-phone check by the owner) |
 
 Claude reviews every completed milestone against the working tree before the next brief is started (the owner pastes the completion report back).
 
@@ -65,7 +67,7 @@ Claude reviews every completed milestone against the working tree before the nex
 | during M08 | find the course reviewer (counsellor / psychology faculty); review drafted lessons |
 | before M11 | Google Cloud: Web + Android OAuth clients (SHA-1 from `cd android && ./gradlew signingReport`), consent screen "In production"; Neon project → `DATABASE_URL` into `.env.local` and EAS env (sensitive) |
 | before M12 | confirm MAX.png's origin; draw the new MAX poses (Inkscape/Krita) from the traced parts |
-| before M14 | Groq console: enable Zero Data Retention; EAS env has `GROQ_API_KEY`, `DATABASE_URL`, `GOOGLE_WEB_CLIENT_ID` |
+| before M14 | Groq console: enable Zero Data Retention; EAS env has `GROQ_API_KEY`, `DATABASE_URL`, `GOOGLE_WEB_CLIENT_ID`, `ADMIN_EMAILS` |
 
 ## File map (new or heavily changed)
 

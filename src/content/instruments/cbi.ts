@@ -5,7 +5,7 @@ const often5: Option[] = [
   { label: "Often", value: 75 },
   { label: "Sometimes", value: 50 },
   { label: "Seldom", value: 25 },
-  { label: "Never or almost never", value: 0 },
+  { label: "Never/almost never", value: 0 },
 ];
 
 const degree5: Option[] = [
@@ -47,13 +47,10 @@ export const cbi: Instrument = {
   ],
   scoring: { kind: "subscales", agg: "mean" },
   // Commonly used CBI categories in the literature (the original paper defines none): below 50 low, 50–74 moderate, 75–99 high, 100 severe.
-  bands: [
-    { min: 0, label: "Low", note: "Low levels of burnout reported." },
-    { min: 50, label: "Moderate", note: "Moderate exhaustion; look at pacing and rest." },
-    { min: 75, label: "High", note: "High burnout; practical relief and boundaries needed." },
-    { min: 100, label: "Severe", note: "The highest possible score; rest and support strongly advised." },
-  ],
-  source: "Kristensen, Borritz, Villadsen & Christensen (2005), Work & Stress 19(3):192–207. Student items adapted by MAX.",
-  licence: "Open access / free research use.",
+  // The official CBI scoring (NFA, Denmark) is the mean of each scale, 0–100, with no cut-offs. The 50/75/100
+  // categories seen in later papers could not be traced to a primary source, so none are shown.
+  bands: [],
+  source: "Kristensen, Borritz, Villadsen & Christensen (2005), Work & Stress 19(3):192–207. Student items adapted by MAX from the work-burnout scale (no clean English student version is published).",
+  licence: "Free to use; the authors state the wording may be adapted (NFA, Denmark).",
   scienceUrl: "https://pubmed.ncbi.nlm.nih.gov/19223398/",
 };

@@ -15,6 +15,8 @@ import { replyLanguage } from "./reply.ts";
 
 test("strips Latin accents but keeps Devanagari intact", () => {
   assert.equal(plain("Lagtā hai tum akelā ho"), "Lagta hai tum akela ho");
+  // a model once ended a reply with "(End)"
+  assert.equal(plain("chalo grounding try karte hain?(End)"), "chalo grounding try karte hain?");
   assert.equal(plain("मुझे नींद नहीं आती"), "मुझे नींद नहीं आती");
 });
 
@@ -22,6 +24,10 @@ test("detects the student's language", () => {
   assert.equal(replyLanguage("I failed my midsem and everyone thinks I'm stupid"), "english");
   assert.equal(replyLanguage("roommate se ladai ho gayi, akela feel ho raha hai"), "hinglish");
   assert.equal(replyLanguage("मुझे नींद नहीं आती"), "hindi");
+  // short Hinglish replies used to come back in English (found in the end-to-end chat check)
+  assert.equal(replyLanguage("haan safe hu, bas bura laga"), "hinglish");
+  assert.equal(replyLanguage("Are baat karo na"), "hinglish");
+  assert.equal(replyLanguage("i am safe, just really tired"), "english");
 });
 
 import { extractTestChip } from "./reply.ts";

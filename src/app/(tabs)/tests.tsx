@@ -1,26 +1,16 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, View, StyleSheet } from "react-native";
+import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { instruments, categories, type Instrument } from "@/content/instruments";
+import { instruments, categories } from "@/content/instruments";
 import { featured, filterInstruments } from "@/lib/tests";
 import { useStore } from "@/lib/store";
-import { radius, space, useTheme } from "@/lib/theme";
+import { space, useTheme } from "@/lib/theme";
 import { Button, Field, Row, Screen, Section, T } from "@/lib/ui";
 import { Frame } from "@/ui/sketch/Frame";
 import { DoodleIcon, type DoodleIconName } from "@/ui/icons/DoodleIcon";
-import {
-  WellnessFigure,
-  GrowthFigure,
-  PersonalityFigure,
-  DigitalBalanceFigure,
-  LearningFigure,
-  BreathingFigure,
-  GroundingFigure,
-  SpiralFigure,
-  SafetyFigure,
-  ReadingFigure,
-  SleepFigure,
-} from "@/ui/illustrations";
+import { SceneArt, SceneShelf, type ShelfItem } from "@/components/scenes/SceneArt";
+import type { SceneName } from "@/components/scenes/scenes";
+import { FocusScope } from "@/components/scenes/focus";
 
 const instrumentIcons: Record<string, DoodleIconName> = {
   phq9: "cloud",
@@ -48,31 +38,26 @@ const categoryIcons: Record<string, DoodleIconName> = {
   phone: "phone",
 };
 
-const instrumentFigures: Record<string, React.ComponentType<{ size?: number }>> = {
-  phq9: WellnessFigure,
-  gad7: SpiralFigure,
-  cbi: BreathingFigure,
-  who5: GrowthFigure,
-  loneliness3: SafetyFigure,
-  asrs6: GroundingFigure,
-  aq10: PersonalityFigure,
-  sci: SleepFigure,
-  pswq: SpiralFigure,
-  brs: SafetyFigure,
-  rses: GrowthFigure,
-  saps: LearningFigure,
-  bas2: GroundingFigure,
-  onetMiniIp: ReadingFigure,
-  miniIpip: PersonalityFigure,
-  tech: DigitalBalanceFigure,
+// Each check gets a picture of MAX's world that fits it (docs/plan/M16, decision 11), not a generic figure.
+const instrumentScenes: Record<string, SceneName> = {
+  phq9: "kind",
+  gad7: "overthinking",
+  cbi: "sigh",
+  who5: "wellness",
+  loneliness3: "waves",
+  asrs6: "library",
+  aq10: "personality",
+  sci: "sleep",
+  pswq: "spiral",
+  brs: "getgoing",
+  rses: "personality",
+  saps: "exam",
+  bas2: "breathe",
+  onetMiniIp: "growth",
+  miniIpip: "personality",
+  tech: "phone",
 };
-
-const categoryFigures: Record<string, React.ComponentType<{ size?: number }>> = {
-  wellness: WellnessFigure,
-  growth: GrowthFigure,
-  personality: PersonalityFigure,
-  phone: DigitalBalanceFigure,
-};
+const categoryScenes: Record<string, SceneName> = { wellness: "wellness", growth: "growth", personality: "personality", phone: "phone" };
 
 export default function TestsTab() {
   const t = useTheme();
@@ -86,10 +71,13 @@ export default function TestsTab() {
   const filtered = filterInstruments(instruments, query);
 
   return (
-    <Screen title="Self-tests">
+    <FocusScope>
+      {(settle) => (
+    <Screen title="Self-tests" onScrollSettled={settle}>
       <View style={{ gap: space.md, marginBottom: space.sm }}>
         <Field
           value={query}
+          maxLength={80}
           onChangeText={setQuery}
           placeholder="Search self-tests..."
           accessibilityLabel="Search self-tests"
@@ -142,12 +130,8 @@ export default function TestsTab() {
                       </T>
                     </View>
                     <T v="title">{feat.title}</T>
-                    {feat.intro ? <T soft numberOfLines={2}>{feat.intro}</T> : null}
                   </View>
-                  {(() => {
-                    const FeatFigure = instrumentFigures[feat.id] ?? WellnessFigure;
-                    return <FeatFigure size={68} />;
-                  })()}
+                  <SceneArt name={instrumentScenes[feat.id] ?? "wellness"} width={96} />
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: space.xs }}>
                   <T v="small" soft>{`~${feat.minutes} min · ${feat.items?.length ?? 0} questions`}</T>
@@ -157,7 +141,7 @@ export default function TestsTab() {
             </Pressable>
           ) : null}
 
-          {/* Category Rows with Large Figure Cards */}
+          {/* One shelf of MAX scene cards per category */}
           {categories.map((cat) => {
             const inCategory = instruments.filter((inst) => inst.category === cat.id);
             if (inCategory.length === 0) return null;
@@ -172,78 +156,24 @@ export default function TestsTab() {
                   <T v="small" soft>{`${inCategory.length} check-ups`}</T>
                 </View>
 
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: space.md, paddingRight: space.md }}>
-                  {inCategory.map((inst) => {
-                    const FigureComponent = instrumentFigures[inst.id] ?? categoryFigures[cat.id] ?? WellnessFigure;
+                {/* a picture, the name and one detail, like every other card (M16 decision 14); "screening, not a
+                    diagnosis" is said on the result screen and in "About these tests". Built as the row scrolls. */}
+                <SceneShelf
+                  id={cat.id}
+                  width={200}
+                  items={inCategory.map((inst): ShelfItem => {
                     const taken = hasTaken(inst.id);
                     const r = lastResult(inst.id);
-                    return (
-                      <Pressable
-                        key={inst.id}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${inst.title}. ${taken ? `Taken, last ${r?.band}` : `About ${inst.minutes} minutes`}`}
-                        onPress={() => router.push(`/test/${inst.id}`)}
-                        style={({ pressed }) => ({
-                          width: 240,
-                          minHeight: 275,
-                          opacity: pressed ? 0.8 : 1,
-                        })}>
-                        <Frame
-                          id={`test-card-${inst.id}`}
-                          fill
-                          fillColor={t.raised}
-                          strokeColor={t.rule}
-                          style={styles.testCard}>
-                          {/* Top Figure Illustration Area */}
-                          <View style={[styles.figureContainer, { backgroundColor: t.paper, borderColor: t.rule }]}>
-                            <FigureComponent size={120} />
-                          </View>
-
-                          {/* Card Content Body */}
-                          <View style={{ flex: 1, justifyContent: "space-between", gap: space.xs }}>
-                            <View style={{ gap: 4 }}>
-                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                  <DoodleIcon name={instrumentIcons[inst.id] ?? "checklist"} size={14} color={t.ink} />
-                                  <T v="small" soft style={{ fontWeight: "600", fontSize: 11 }}>
-                                    {inst.short}
-                                  </T>
-                                </View>
-                                {taken ? (
-                                  <View style={[styles.doneBadge, { borderColor: t.rule, backgroundColor: t.paper }]}>
-                                    <DoodleIcon name="check" size={10} color={t.ink} />
-                                    <T v="small" style={{ fontSize: 10, color: t.ink, fontWeight: "600" }}>Taken</T>
-                                  </View>
-                                ) : (
-                                  <View style={[styles.badge, { borderColor: t.rule }]}>
-                                    <T v="small" soft style={{ fontSize: 9 }}>{`~${inst.minutes} MIN`}</T>
-                                  </View>
-                                )}
-                              </View>
-
-                              <T v="heading" numberOfLines={2} style={{ fontSize: 15, lineHeight: 20 }}>
-                                {inst.title}
-                              </T>
-                              <T v="small" soft numberOfLines={1} style={{ fontSize: 11 }}>
-                                {`${inst.items.length} questions · Standardized`}
-                              </T>
-                            </View>
-
-                            <View style={[styles.cardFooter, { borderTopColor: t.rule }]}>
-                              <T v="small" soft style={{ fontSize: 11 }}>
-                                {r?.band ? `Last: ${r.band}` : `Clinical screener`}
-                              </T>
-                              <DoodleIcon name="chevron-right" size={15} color={t.ink2} />
-                            </View>
-                          </View>
-                        </Frame>
-                      </Pressable>
-                    );
+                    return {
+                      key: inst.id,
+                      scene: instrumentScenes[inst.id] ?? categoryScenes[cat.id] ?? "wellness",
+                      title: inst.title,
+                      meta: taken ? (r?.band ? `Last: ${r.band}` : "Taken") : `${inst.minutes} min · ${inst.items.length} questions`,
+                      metaIcon: taken ? "check" : "clipboard",
+                      onPress: () => router.push(`/test/${inst.id}`),
+                    };
                   })}
-                </ScrollView>
+                />
               </View>
             );
           })}
@@ -259,44 +189,8 @@ export default function TestsTab() {
         />
       </View>
     </Screen>
+      )}
+    </FocusScope>
   );
 }
 
-const styles = StyleSheet.create({
-  testCard: {
-    padding: space.sm,
-    gap: space.xs,
-    minHeight: 275,
-  },
-  figureContainer: {
-    height: 105,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  cardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: space.xs,
-    borderTopWidth: 1,
-    marginTop: space.xs,
-  },
-  badge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  doneBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-});

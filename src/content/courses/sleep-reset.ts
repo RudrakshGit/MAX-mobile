@@ -60,7 +60,7 @@ export const sleepReset: Course = {
         "Once written down, tell your brain: 'These are safely recorded. There is nothing I can do about them at midnight. I will handle them tomorrow.'",
       ],
       action: { write: "Write down 2 things on your mind and 1 thing you will tackle tomorrow." },
-      watch: "praveen-sleep-tips",
+      watch: "hi-whiteswan-sleep",
       source: "Scullin et al. (2018), bedtime to-do writing and sleep onset, J Exp Psychol Gen",
       licence: "MAX Original adaptation",
     },

@@ -44,11 +44,11 @@ All 15 instruments (`docs/v2-features.md` §5) report a range or profile, never 
 
 v2 (owner decision, Oct 2026): optional Google login stores the signed-in student's app data on our server; journal text and voice may be sent to the AI with consent. The rules below are the current boundary — see `docs/v2-features.md` §6.
 
-- Login is optional; signed out, everything stays on the phone. Signed in, the state envelope syncs to our server (Neon), minus the anonymous campus id and the lock setting.
+- Login is optional; signed out, everything stays on the phone. Signed in, the state envelope syncs to our server (Neon), minus the anonymous id, the lock setting and other per-phone fields (`src/lib/sync.ts`).
 - Emails and Indian mobile numbers are redacted before text reaches the model; no name or account identifier is sent to the AI.
 - The chat model sees the conversation, weekly averages, check-up bands and the student's own if-then plans ("What your companion knows" toggle).
 - Journal text goes to the AI only for reflections/tags when "AI journal reflections & tags" is on; voice only for transcription when "Voice transcription" is on. Audio is never stored on the server.
 - The daily insight is built from numbers and chip ids only, never journal text.
 - Per-app screen-time is computed on the phone and never sent to the AI (it may sync with the student's account).
-- Campus pulse is opt-in: mood, sleep and pressure (1–5) with a random ID. A campus sees nothing until 10 distinct students contribute; per-day points appear only for days that clear 10 on their own.
+- Sharing with a college is opt-in and only with a college MAX has verified: mood, sleep and pressure (1–5), journal category ids and optional year of study, with a random ID; never text or a name. Staff see nothing until 10 distinct students contribute; smaller groups are hidden, numbers carry noise and counts are rounded to 5. Stopping can delete everything the phone shared (`docs/plan/M15-college-dashboard.md`).
 - Notification text never mentions mental health.

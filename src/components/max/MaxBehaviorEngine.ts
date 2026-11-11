@@ -125,8 +125,9 @@ const TRANSITIONS: Record<MaxBehavior, Partial<Record<BehaviorTrigger, MaxBehavi
   waking: {
     animationEnd: "active",
   },
+  // the hop clip lands by itself, so a jump ends straight back in "active"
   jump: {
-    animationEnd: "landed",
+    animationEnd: "active",
     panStart: "drag",
     shake: "dizzy",
   },
@@ -178,8 +179,9 @@ const TRANSITIONS: Record<MaxBehavior, Partial<Record<BehaviorTrigger, MaxBehavi
     leaveEdge: "drag",
     shake: "dizzy",
   },
+  // shaken: dizzy, then MAX shakes it off and smiles (a companion never gets angry at the student)
   dizzy: {
-    animationEnd: "angry",
+    animationEnd: "idle",
     shake: "dizzy",
   },
   angry: {

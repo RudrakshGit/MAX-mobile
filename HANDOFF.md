@@ -2,6 +2,51 @@
 
 You are implementing MAX v2 from written briefs. Claude (planner/reviewer) wrote the plan; the owner (Rudraksh) decides. You do the building. Think while you build: the plan can be wrong, and catching that is part of your job.
 
+## Claude is working in the same folder right now (Nov 2026)
+**M16 is done (7 Nov 2026, Claude, owner asked): read `docs/plan/M16-motion-cards-ia.md` before touching MAX, any
+animation, cards, tabs or the theme switch.** Keep these rules:
+- No springs or bounce anywhere: timing curves from `src/components/max/rig/motion.ts`; overshoot ≤ 1%, squash ≤ 8%
+  from the feet, a hold after every action. Slow loops and comic marks move on twos (`steppedEasing`, `twos()`).
+- MAX is the rig in `src/components/max/rig/` (poses and clips are data; `clips.test.ts` checks the rules; the lab is
+  `/dev/max`). `<Max>` keeps its props. `MaxWalk.tsx`, the traced sleeping drawing and `ThemeSwitchBulbAnimation` are
+  gone.
+- Card pictures are MAX scenes (`src/components/scenes/`, `SceneArt`, `SceneCard`: picture, title, one detail).
+  `src/ui/illustrations/` (the old pencil-drawn figures) was removed. Avatars are unchanged.
+- Colours only in `src/lib/theme.ts`: the help red (only alarm colour), MAX's cheeks (`characterBlush`) and the card
+  tints (`tint.*`), never for text.
+- Tabs: Today · Explore · Talk · Journal. `/learn` and `/tools` redirect to `/explore`; self-tests live at
+  `/check-yourself`.
+- Change the theme only through `switchTheme()` (`src/lib/theme-switch.tsx` + `modules/theme-reveal`: ink spreads
+  from the tap at once, the app re-renders under it).
+- Scene cards animate only when in view: shelves use `SceneShelf id=…` inside a `FocusScope` (`scenes/focus.tsx`).
+- Settings pages live in `src/components/settings/sections.tsx`; the menu is `app/profile/settings/index.tsx`.
+- Avatars, like MAX, use the `character*` colours in both themes.
+- Numbers, times and dates use `TimeField` / `DateField` / `NumberField` from `src/ui/sketch/Wheel.tsx` (a field that
+  opens a sheet with wheels), never a row of buttons and never a wheel open on a scrolling page.
+- Long rows of cards use `SceneShelf` (lazy). Don't subscribe a screen to the whole store (`useStore((s) => s)`);
+  pick the fields. The floating MAX stays mounted and is only hidden.
+- Home's walk story starts from "Show me less" (owner); MAX sits, sighs, lies down and sleeps (`sitting`, `lying`).
+- Overdraw: the native stack's `contentStyle` is the only paper under a screen. `Screen`, `Page` and the tab scenes
+  paint no background, and the window background is dropped after start. Don't add a full-screen
+  `backgroundColor: t.paper` to a screen.
+- Buttons, chips, checkboxes and the Help pill are plain rounded boxes (owner, 11 Nov 2026); only card outlines, the
+  text-field line and MAX are hand-drawn. Don't bring sketch paths back onto anything tappable.
+- The college staff dashboard is not in the app any more (owner, 11 Nov 2026); it will be a web dashboard on the
+  MAX website. The app only has Settings → "Share stats with college" and an optional College ID in onboarding.
+- The app also runs on the web ("Try now", served with the API on EAS Hosting). Anything native goes behind
+  `isWeb` from `src/lib/platform.ts`; deploy with `npx expo export --platform web` then `eas deploy --prod`.
+- Chat: after a helpline card, MAX keeps talking in care mode (`afterCrisis`, `src/lib/chat-payload.ts`); never make
+  the card the only answer to follow-ups again.
+- `Chip` takes `role`: `radio` (one of a set, the default), `checkbox` (multi-pick or on/off) or `button` (an
+  action). Every `Pressable` has an `accessibilityRole`; every free-text field has a `maxLength`. A modal's dim
+  backdrop is a sibling of its sheet (`StyleSheet.absoluteFill`), never a `Pressable` wrapped around it.
+- Onboarding asks for the permissions features use (notifications, microphone, usage access) in
+  `src/components/OnboardingPermissions.tsx`, all optional; each feature still asks when it's used.
+
+Claude is building M11 (Google backup), reminders and personalisation in these files: `src/lib/{cloud,sync,personal,reminders,reminder-plan,my-music}.ts`, `src/server/*`, `src/app/api/*`, `src/app/profile/{account,exams}.tsx`, `src/features/account/*`, `src/components/{HelpedPrompt,ReminderOffer,CollegeShare}.tsx`, `src/lib/college.ts`, `src/server/college*.ts`. Please don't rename, move or delete them; if one breaks your build, tell the owner instead. MAX's own files (`src/components/max/*`) are yours.
+
+*(History, superseded by M16 on 7 Nov 2026: the walk, breathing and Zs now live in the rig; `MaxWalk.tsx` and `ThemeSwitchBulbAnimation` no longer exist.)* **4 Nov 2026, Claude reviewed the walk on the emulator (owner asked) and changed:** feet move back at a constant speed on the ground and Home moves MAX at `walkSpeed(size, cycle)` from `MaxWalk.tsx` (before, the feet slid: they pushed back at ~62 dp/s while MAX moved at 35); solid charcoal feet like the standing pose (the grey sole line made them look faded); side lobes moved out and down (`LOBE_SHIFT`) so they no longer sit on the cheek; whistle notes and sleep Zs moved off the head line; sweat drop is an outlined drop beside the head (it was a solid blot on the outline); `TIRED_WALK_CYCLE_MS` exported from `Max.tsx`. `WalkingMaxCorridor.tsx` was unused and has been removed (4 Nov cleanup; it's in the Trash if needed). Later the same day (owner asked): `Max` takes `breath` (a 0–1 shared value) and `breathPhase` to breathe along (body fills upward, eyes closed, "o" mouth and air on the out-breath; used by the breathing tool and the deep breath before sleep on Home); `ThemeSwitchBulbAnimation` dims the room and the light now shrinks into / spreads out of the bulb instead of a grey fade.
+
 ## Read order
 1. This file.
 2. `AGENTS.md` (invariants that break the product if violated).

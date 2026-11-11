@@ -1,18 +1,9 @@
-import React, { useState } from "react";
-import {
-  Pressable,
-  Text,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-  type TextStyle,
-  type LayoutChangeEvent,
-} from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { getBasePath, getSketchPath, seedFrom } from "./sketch";
-import { useTheme, stroke as themeStroke, font, space } from "@/lib/theme";
-import { Underline } from "./Underline";
+import React from "react";
+import { Pressable, Text, StyleSheet, View, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
+import { useTheme, font, space } from "@/lib/theme";
+
+// Buttons are plain rounded boxes, the same family as the time field (owner, 11 Nov 2026): the pencil look stays on
+// card outlines, not on things you tap. `id` and `seed` are kept so callers don't change; they no longer draw anything.
 
 export interface ButtonProps {
   label: string;
@@ -26,204 +17,72 @@ export interface ButtonProps {
   textStyle?: StyleProp<TextStyle>;
 }
 
-export function Button({
-  label,
-  onPress,
-  kind = "primary",
-  disabled = false,
-  icon,
-  id,
-  seed,
-  style,
-  textStyle,
-}: ButtonProps) {
+export const BUTTON_RADIUS = 12;
+
+export function Button({ label, onPress, kind = "primary", disabled = false, icon, style, textStyle }: ButtonProps) {
   const t = useTheme();
-  const [layout, setLayout] = useState({ w: 0, h: 0 });
-
-  const buttonId = id ?? label;
-  const finalSeed = seed ?? seedFrom(buttonId);
-
-  const onLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (Math.round(width) !== layout.w || Math.round(height) !== layout.h) {
-      setLayout({ w: Math.round(width), h: Math.round(height) });
-    }
-  };
 
   if (kind === "quiet") {
+    const color = disabled ? t.ink3 : t.ink;
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled }}
+        // text buttons: widen the touch area to the 48 dp minimum
+        hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
         disabled={disabled}
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.quietContainer,
-          pressed && styles.quietPressed,
-          style,
-        ]}>
-        <Underline id={`${buttonId}-underline`} seed={finalSeed} color={disabled ? t.ink3 : t.ink}>
-          <View style={styles.contentRow}>
-            {icon ? <View style={styles.iconBox}>{icon}</View> : null}
-            <Text
-              style={[
-                styles.quietText,
-                { color: disabled ? t.ink3 : t.ink },
-                textStyle,
-              ]}>
-              {label}
-            </Text>
-          </View>
-        </Underline>
+        style={({ pressed }) => [styles.quiet, { opacity: pressed ? 0.6 : 1 }, style]}>
+        <View style={styles.row}>
+          {icon ? <View style={styles.icon}>{tint(icon, color)}</View> : null}
+          <Text style={[styles.quietText, { color, textDecorationColor: t.ink3 }, textStyle]}>{label}</Text>
+        </View>
       </Pressable>
     );
   }
 
-  const isPrimary = kind === "primary" || kind === "accent";
-  const isDanger = kind === "danger";
-  const hasShadow = !disabled && (isPrimary || isDanger);
-
-  const pathD = layout.w > 4 && layout.h > 0
-    ? getSketchPath("pill", layout.w, layout.h, finalSeed)
-    : "";
-
-  let strokeColor = t.ink;
-  let fillColor = "none";
-  let textColor = t.ink;
-  let shadowColor = t.ink;
-
-  if (disabled) {
-    strokeColor = t.rule;
-    fillColor = "none";
-    textColor = t.ink3;
-  } else if (isDanger) {
-    strokeColor = t.help;
-    fillColor = t.help;
-    textColor = t.onHelp;
-    shadowColor = t.ink;
-  } else if (isPrimary) {
-    strokeColor = t.ink;
-    fillColor = t.ink;
-    textColor = t.inverseInk;
-    shadowColor = t.ink;
-  } else {
-    // secondary
-    strokeColor = t.ink;
-    fillColor = "none";
-    textColor = t.ink;
-  }
+  // a disabled button is an outline with faint text, not a grey slab
+  const filled = !disabled && (kind === "primary" || kind === "accent" || kind === "danger");
+  const bg = !filled ? t.raised : kind === "danger" ? t.help : t.ink;
+  const fg = disabled ? t.ink3 : !filled ? t.ink : kind === "danger" ? t.onHelp : t.inverseInk;
+  const border = filled ? bg : t.rule;
 
   return (
     <Pressable
-      onLayout={onLayout}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.buttonBase,
-        hasShadow && styles.withShadowMargin,
-        pressed && !disabled && styles.pressed,
-        disabled && styles.disabledBase,
+        styles.base,
+        { backgroundColor: bg, borderColor: border, opacity: pressed && !disabled ? 0.8 : 1 },
         style,
       ]}>
-      {layout.w > 4 && layout.h > 0 && pathD ? (
-        <Svg
-          pointerEvents="none"
-          width={layout.w + (hasShadow ? 4 : 0)}
-          height={layout.h + (hasShadow ? 4 : 0)}
-          style={styles.svg}>
-          {hasShadow ? (
-            <Path
-              d={getBasePath("pill", layout.w, layout.h)}
-              fill={shadowColor}
-              transform="translate(5, 5)"
-            />
-          ) : null}
-          {fillColor !== "none" ? (
-            <Path
-              d={getBasePath("pill", layout.w, layout.h)}
-              fill={fillColor}
-              transform="translate(2, 2)"
-            />
-          ) : null}
-          <Path
-            d={pathD}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth={themeStroke.line}
-            transform="translate(2, 2)"
-          />
-        </Svg>
-      ) : null}
-      <View style={styles.contentRow}>
-        {icon ? <View style={styles.iconBox}>{icon}</View> : null}
-        <Text style={[styles.label, { color: textColor }, textStyle]}>
-          {label}
-        </Text>
+      <View style={styles.row}>
+        {icon ? <View style={styles.icon}>{tint(icon, fg)}</View> : null}
+        <Text style={[styles.label, { color: fg }, textStyle]}>{label}</Text>
       </View>
     </Pressable>
   );
 }
 
+// an icon without its own colour takes the label's, so it stays visible on filled buttons
+const tint = (icon: React.ReactNode, color: string) =>
+  React.isValidElement<{ color?: string }>(icon) && !icon.props.color ? React.cloneElement(icon, { color }) : icon;
+
 const styles = StyleSheet.create({
-  buttonBase: {
-    position: "relative",
+  base: {
     minHeight: 48,
     paddingHorizontal: space.lg,
     paddingVertical: 12,
+    borderRadius: BUTTON_RADIUS,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
-  withShadowMargin: {
-    marginRight: 3,
-    marginBottom: 3,
-  },
-  pressed: {
-    transform: [
-      { translateX: 2 },
-      { translateY: 2 },
-      { scaleX: 1.03 },
-      { scaleY: 0.95 },
-    ],
-  },
-  disabledBase: {
-    opacity: 0.65,
-  },
-  quietContainer: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.xs,
-    alignSelf: "flex-start",
-  },
-  quietPressed: {
-    opacity: 0.7,
-  },
-  quietText: {
-    fontFamily: font.body,
-    fontSize: 13,
-    fontStyle: "italic",
-    fontWeight: "400",
-  },
-  contentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.sm,
-  },
-  iconBox: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontFamily: font.button,
-    fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  svg: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    overflow: "visible",
-  },
+  quiet: { paddingVertical: space.xs, paddingHorizontal: space.xs, alignSelf: "flex-start" },
+  quietText: { fontFamily: font.bodyBold, fontSize: 14, textDecorationLine: "underline" },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm },
+  icon: { alignItems: "center", justifyContent: "center" },
+  label: { fontFamily: font.button, fontSize: 15, fontWeight: "600", textAlign: "center" },
 });

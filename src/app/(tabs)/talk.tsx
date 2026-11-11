@@ -1,12 +1,14 @@
 import { DoodleIcon, type DoodleIconName } from "@/ui/icons/DoodleIcon";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, AppState, FlatList, Pressable, ScrollView, TextInput, View } from "react-native";
+import { chatStarters } from "@/lib/personal";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { askCompanion } from "@/lib/api";
-import { activeChat, addMessage, getState, startChat, update, useStore, type Msg } from "@/lib/store";
+import { activeChat, addMessage, getState, logActivity, startChat, update, useStore, type Msg } from "@/lib/store";
 import { radius, space, useTheme } from "@/lib/theme";
-import { Button, call, CrisisCard, Screen, T } from "@/lib/ui";
+import { Button, call, CrisisCard, openWebUrl, Screen, T } from "@/lib/ui";
+import { DOWNLOAD_URL, isWeb, WEB_CHATS_PER_DAY } from "@/lib/platform";
 import { classifyRisk } from "@/safety/classifier";
 import { suggestFor } from "@/lib/suggest";
 import { extractTestChip } from "@/lib/reply";
@@ -31,7 +33,6 @@ const TEST_CHIP_NAMES: Record<string, string> = {
   tech: "Tech-stress check",
 };
 
-const starters = ["I can't focus on my studies", "I keep overthinking something", "I feel lonely in the hostel", "I can't sleep"];
 
 export default function Talk() {
   const t = useTheme();
@@ -40,7 +41,28 @@ export default function Talk() {
   const messages = chat?.messages ?? [];
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  // a short nod from MAX when a reply arrives
+  const [replied, setReplied] = useState(false);
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (wasBusy.current && !busy) {
+      setReplied(true);
+      const t = setTimeout(() => setReplied(false), 1400);
+      wasBusy.current = busy;
+      return () => clearTimeout(t);
+    }
+    wasBusy.current = busy;
+  }, [busy]);
   const list = useRef<FlatList<Msg>>(null);
+  // Privacy shield for hostels and libraries: hide the conversation with one tap, and whenever the app leaves
+  // the screen (so it isn't readable from the recent-apps view or when a friend picks up the phone).
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (st) => {
+      if (st !== "active" && getState().chats.length) setHidden(true);
+    });
+    return () => sub.remove();
+  }, []);
   const { draft, n } = useLocalSearchParams<{ draft?: string; n?: string }>();
   useEffect(() => {
     if (draft) setText(draft);
@@ -58,12 +80,14 @@ export default function Talk() {
   }, [busy]);
 
   // Three heavy replies in the last six turns: point towards a person, not just the app.
-  const heavy = messages.slice(-12).filter((m) => m.kind === "distress").length >= 3;
+  const heavy = messages.slice(-12).filter((m) => m.kind === "distress" || m.kind === "care").length >= 3;
 
   const send = async (raw: string, retry = false) => {
     const said = raw.trim();
     if (!said || busy) return;
+    logActivity("do", "talk");
     setText("");
+    setHidden(false);
 
     const chatId = activeChat(getState())?.id ?? startChat();
 
@@ -81,6 +105,19 @@ export default function Talk() {
     if (classifyRisk(said).level === "crisis") {
       addMessage(chatId, { role: "assistant", text: "", kind: "crisis" });
       return;
+    }
+    // the web preview has a daily allowance; the helplines above never count against it
+    if (isWeb) {
+      const dayStart = new Date().setHours(0, 0, 0, 0);
+      const today = getState().chats.flatMap((c) => c.messages).filter((m) => m.role === "user" && m.at >= dayStart).length;
+      if (today > WEB_CHATS_PER_DAY) {
+        addMessage(chatId, {
+          role: "assistant",
+          text: `That's today's ${WEB_CHATS_PER_DAY} messages on the web. I'm here again tomorrow, or with no daily limit in the free MAX app.`,
+          suggest: [{ label: "Get the app", href: DOWNLOAD_URL }],
+        });
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -100,15 +137,21 @@ export default function Talk() {
         addMessage(chatId, {
           role: "assistant",
           text: cleanReply,
-          kind: r.distress ? "distress" : undefined,
+          // after a helpline card MAX keeps talking, with the call one tap away on every reply (care)
+          kind: r.care ? "care" : r.distress ? "distress" : undefined,
           suggest: suggestions.length > 0 ? suggestions : undefined,
           emotions: r.emotions,
         });
       }
     } catch (e) {
+      const reason = (e as Error).message;
       const errText =
-        (e as Error).message === "no-server"
+        reason === "no-server"
           ? "Chat isn't connected in this build yet, so I can't reply. Everything else in the app works offline. Writing it down or a slow breath can help right now."
+          : reason === "rate"
+          ? "That's a lot of messages in a minute, so I need a short pause. Try again in a minute; your message is saved."
+          : reason === "busy"
+          ? "The AI service is busy right now, so I can't reply. Your message is saved; try again in a little while."
           : "I couldn't reach the internet just now, so I can't reply. Your message is saved. While you wait, a slow breath or writing it down can help.";
       addMessage(chatId, { role: "assistant", text: errText, kind: "offline" });
     } finally {
@@ -124,22 +167,46 @@ export default function Talk() {
       title={companion}
       left={
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginRight: space.xs }}>
-          <Pressable accessibilityLabel="Back" onPress={() => router.back()} hitSlop={10} style={{ padding: 6 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} hitSlop={10} style={{ padding: 6 }}>
             <DoodleIcon name="arrow-left" size={20} color={t.ink} />
           </Pressable>
-          {messages.length > 0 ? <Max state={busy ? "thinking" : "idle"} size={34} boil /> : null}
+          {messages.length > 0 ? (
+            // MAX leans in while the student types, thinks while the reply comes, and nods when it's there
+            <Max state={busy ? "thinking" : text.trim() ? "listening" : "idle"} action={replied ? "nod" : "none"} size={34} />
+          ) : null}
         </View>
       }
       right={
-        <Pressable accessibilityLabel="Conversations" onPress={() => router.push("/chats")} hitSlop={10} style={{ padding: 6 }}>
-          <DoodleIcon name="message-square" size={20} color={t.ink2} />
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {messages.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={hidden ? "Show messages" : "Hide messages"}
+              onPress={() => setHidden((h) => !h)}
+              hitSlop={10}
+              style={{ padding: 6 }}>
+              <DoodleIcon name={hidden ? "unlock" : "lock"} size={20} color={t.ink2} />
+            </Pressable>
+          ) : null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Conversations" onPress={() => router.push("/chats")} hitSlop={10} style={{ padding: 6 }}>
+            <DoodleIcon name="message-square" size={20} color={t.ink2} />
+          </Pressable>
+        </View>
       }>
       <View style={{ paddingHorizontal: space.md, marginTop: -space.sm, marginBottom: space.sm }}>
         <T v="small" soft>AI companion · not a counsellor · can't handle emergencies</T>
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
-        {messages.length === 0 ? (
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset enabled={!isWeb}>
+        {hidden && messages.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Messages hidden. Tap to show."
+            onPress={() => setHidden(false)}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: space.sm, padding: space.lg }}>
+            <DoodleIcon name="lock" size={28} color={t.ink2} />
+            <T soft style={{ textAlign: "center" }}>Messages hidden. Tap to show them.</T>
+          </Pressable>
+        ) : messages.length === 0 ? (
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: space.md, gap: space.md, flexGrow: 1 }}
@@ -177,6 +244,18 @@ export default function Talk() {
             selectionColor={t.ink}
             cursorColor={t.ink}
             multiline
+            // on a computer keyboard Enter sends and Shift+Enter starts a new line
+            onKeyPress={
+              isWeb
+                ? (e) => {
+                    const k = e.nativeEvent as unknown as { key: string; shiftKey?: boolean; preventDefault?: () => void };
+                    if (k.key === "Enter" && !k.shiftKey) {
+                      (e as unknown as { preventDefault: () => void }).preventDefault();
+                      void send(text);
+                    }
+                  }
+                : undefined
+            }
             maxLength={2000}
             accessibilityLabel={`Message ${companion}`}
             style={{ flex: 1, maxHeight: 120, minHeight: 46, color: t.ink, backgroundColor: t.paper, borderColor: t.rule, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: space.md, paddingVertical: 10, fontSize: 15 }}
@@ -199,7 +278,16 @@ export default function Talk() {
 
 function Bubble({ m, latest, heavy, onRetry }: { m: Msg; latest: boolean; heavy: boolean; onRetry: () => void }) {
   const t = useTheme();
-  if (m.kind === "crisis") return <CrisisCard />;
+  if (m.kind === "crisis")
+    return (
+      <View style={{ gap: space.sm }}>
+        {/* MAX doesn't go quiet behind the card: it says it's still here, then shows the people who can help now */}
+        <View style={{ alignSelf: "flex-start", maxWidth: "92%", backgroundColor: t.paper, borderRadius: radius.lg, borderTopLeftRadius: 4, borderWidth: 1, borderColor: t.rule, padding: space.md }}>
+          <T style={{ fontSize: 16, lineHeight: 24 }}>I'm really glad you told me. I'm here and you can keep talking to me. Right now, please also reach a person who can help:</T>
+        </View>
+        <CrisisCard />
+      </View>
+    );
   if (m.role === "user")
     return (
       <View style={{ alignSelf: "flex-end", maxWidth: "85%", backgroundColor: t.raised, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -209,19 +297,21 @@ function Bubble({ m, latest, heavy, onRetry }: { m: Msg; latest: boolean; heavy:
   // Soft, calming companion card
   return (
     <View style={{ alignSelf: "flex-start", maxWidth: "92%", backgroundColor: t.paper, borderRadius: radius.lg, borderTopLeftRadius: 4, borderWidth: 1, borderColor: t.rule, padding: space.md, gap: space.sm }}>
-      <T v="voice">{m.text}</T>
+      {/* replies in the reading font: handwriting is for titles and short lines, never paragraphs (M16) */}
+      <T style={{ fontSize: 16, lineHeight: 24 }}>{m.text}</T>
       {m.kind === "offline" && latest ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           <Chip icon="refresh-cw" label="Try again" onPress={onRetry} />
           <Chip icon="wind" label="Breathe for a minute" onPress={() => router.push("/tool/breathe")} />
         </View>
       ) : null}
-      {m.kind !== "offline" && (m.suggest?.length || m.kind === "distress") ? (
+      {m.kind !== "offline" && (m.suggest?.length || m.kind === "distress" || m.kind === "care") ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {m.suggest?.map((s) => (
-            <Chip key={s.href} icon={s.href.startsWith("/test/") ? "checklist" : "arrow-right"} label={s.label} onPress={() => router.push(s.href as Href)} />
+            <Chip key={s.href} icon={s.href.startsWith("/test/") ? "checklist" : "arrow-right"} label={s.label} onPress={() => (s.href.startsWith("https://") ? openWebUrl(s.href) : router.push(s.href as Href))} />
           ))}
-          {m.kind === "distress" ? <Chip icon="phone" label="Talk to a person" onPress={() => router.push("/help")} /> : null}
+          {m.kind === "care" ? <Chip icon="phone" label="Call Tele-MANAS · 14416" onPress={() => call("14416")} /> : null}
+          {m.kind === "distress" || m.kind === "care" ? <Chip icon="phone" label="Talk to a person" onPress={() => router.push("/help")} /> : null}
         </View>
       ) : null}
       {latest && heavy && m.kind === "distress" ? (
@@ -242,6 +332,7 @@ function Chip({ icon, label, onPress }: { icon: DoodleIconName | string; label: 
       id={`suggest-${label}`}
       label={label}
       selected={false}
+      role="button"
       onPress={onPress}
       icon={<DoodleIcon name={icon as DoodleIconName} size={15} color={t.ink} />}
     />
@@ -258,6 +349,8 @@ function Typing() {
 }
 
 function Welcome({ name, onPick }: { name: string; onPick: (s: string) => void }) {
+  // starters that fit the time of day, today's check-in and an upcoming exam
+  const [starters] = useState(() => chatStarters(getState(), new Date()));
   return (
     <View style={{ gap: space.md, paddingTop: space.md, alignItems: "center" }}>
       <Max state="wave" size={130} boil />

@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { router, type Href } from "expo-router";
 import { useTheme, space } from "@/lib/theme";
 import { T } from "@/lib/ui";
@@ -71,18 +71,14 @@ export function MaxQuickActions({ visible }: { visible: boolean }) {
       animationType="fade"
       visible={visible}
       onRequestClose={close}>
-      <Pressable
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.35)",
-          justifyContent: "flex-end",
-          padding: space.md,
-          paddingBottom: space.xl,
-        }}
-        onPress={close}>
+      <View style={{ flex: 1, justifyContent: "flex-end", padding: space.md, paddingBottom: space.xl }}>
         <Pressable
-          onPress={(e) => e.stopPropagation()}
-          style={{ width: "100%" }}>
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={close}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.35)" }]}
+        />
+        <View style={{ width: "100%" }}>
           <Frame
             id="quick-actions-frame"
             fill
@@ -112,6 +108,7 @@ export function MaxQuickActions({ visible }: { visible: boolean }) {
                 accessibilityRole="button"
                 accessibilityLabel="Close"
                 onPress={close}
+                hitSlop={10}
                 style={{
                   width: 30,
                   height: 30,
@@ -164,8 +161,8 @@ export function MaxQuickActions({ visible }: { visible: boolean }) {
               ))}
             </View>
           </Frame>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

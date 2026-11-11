@@ -51,7 +51,10 @@ export function useMaxBehavior(
     if (changed) sync();
   }, [engine, sync]);
 
+  // MAX only dozes off on its own late at night, never while the student is reading in the day.
   const onSleep = useCallback(() => {
+    const h = new Date().getHours();
+    if (h < 22 && h >= 5) return;
     const changed = engine.send("inactivitySleep");
     if (changed) sync();
   }, [engine, sync]);
@@ -91,15 +94,17 @@ export function useMaxBehavior(
   useEffect(() => {
     const b = snapshot.behavior;
     let delay = 0;
-    if (b === "tapped") delay = 500;
-    else if (b === "celebrating") delay = 1600;
-    else if (b === "waking") delay = 750;
-    else if (b === "greeting") delay = 1400;
-    else if (b === "nudge") delay = 900;
-    else if (b === "jump") delay = 520;
-    else if (b === "landed") delay = 400;
-    else if (b === "dizzy") delay = 2200;
-    else if (b === "angry") delay = 1800;
+    // matches the length of each clip in rig/clips.ts, so the next reaction waits for this one to finish
+    if (b === "tapped") delay = 1300;
+    else if (b === "celebrating") delay = 1940;
+    else if (b === "waking") delay = 2150;
+    else if (b === "greeting") delay = 2600;
+    else if (b === "nudge") delay = 2600;
+    else if (b === "jump") delay = 1150;
+    else if (b === "falling") delay = 220; // a released MAX lands right away
+    else if (b === "landed") delay = 900;
+    else if (b === "dizzy") delay = 2500;
+    else if (b === "angry") delay = 1200;
 
     if (delay > 0) {
       const timer = setTimeout(() => {

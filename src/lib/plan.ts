@@ -21,8 +21,9 @@ export function dailyPlan(s: State, date: string): PlanItem[] {
   const todayCheckIn = checkins.find((c) => c.date === date);
   const logDone = Boolean(todayCheckIn);
 
-  const doDone = activity.some((a) => a.date === date && a.kind === "do");
-  const learnDone = activity.some((a) => a.date === date && a.kind === "learn");
+  const todays = activity.filter((a) => a.date === date);
+  // a course lesson (ref "course:day"); the quick reads are logged as "learn" too, but aren't the course step
+  const learnDone = todays.some((a) => a.kind === "learn" && a.ref?.includes(":"));
 
   // "do" step: derived from today's checkin if present, else default one-minute reset
   let doTitle = "One-minute reset";
@@ -35,9 +36,18 @@ export function dailyPlan(s: State, date: string): PlanItem[] {
     }
   }
 
+  // ticked only by the step the student actually did (audit: talk, journal and lesson steps never ticked before)
+  const didStep = (href: string) => {
+    if (href.startsWith("/journal-new")) return todays.some((a) => a.kind === "journal");
+    if (href.startsWith("/lesson/")) return todays.some((a) => a.kind === "learn" && a.ref === href.slice("/lesson/".length));
+    const ref = href === "/talk" ? "talk" : href.startsWith("/tool/") ? href.slice("/tool/".length) : undefined;
+    return todays.some((a) => a.kind === "do" && (ref === undefined || a.ref === ref));
+  };
+  const doDone = didStep(doHref);
+
   // "learn" step: references the next uncompleted lesson from yourCourse
   let learnTitle = "Today's lesson";
-  let learnHref = "/learn";
+  let learnHref = "/explore";
   try {
     const refs = yourCourse(s, courses);
     const nextRef =
@@ -56,7 +66,7 @@ export function dailyPlan(s: State, date: string): PlanItem[] {
     }
   } catch {
     learnTitle = "Today's lesson";
-    learnHref = "/learn";
+    learnHref = "/explore";
   }
 
   // Once a lesson is done today the tick must name that lesson, not whichever one is "next" after it

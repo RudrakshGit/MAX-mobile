@@ -4,6 +4,7 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { getState, initialState, replaceState } from "./store";
 import { parse, SCHEMA_VERSION } from "./schema";
+import { dropMissingTracks } from "@/features/sounds/my-music-files";
 
 const EXPORT_PATTERN = /^max-backup-.*\.json$/;
 
@@ -36,12 +37,52 @@ export async function exportBackup(): Promise<void> {
 
   await FileSystem.writeAsStringAsync(uri, blob);
 
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, {
-      mimeType: "application/json",
-      dialogTitle: "Export MAX Backup",
-      UTI: "public.json",
-    });
+  try {
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/json",
+        dialogTitle: "Export MAX Backup",
+        UTI: "public.json",
+      });
+    }
+  } finally {
+    // The backup is the whole journal in plain text; it must not stay behind in the app's cache.
+    await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+  }
+}
+
+/**
+ * Removes every file MAX itself wrote outside AsyncStorage: voice recordings, songs the student added, leftover recordings in the
+ * cache, exported backups and copies made by the file picker. Used by "Delete everything".
+ */
+export async function wipeLocalFiles(): Promise<void> {
+  const doc = FileSystem.documentDirectory;
+  if (doc) {
+    await FileSystem.deleteAsync(`${doc}voice/`, { idempotent: true }).catch(() => {});
+    await FileSystem.deleteAsync(`${doc}music/`, { idempotent: true }).catch(() => {});
+  }
+  const cache = FileSystem.cacheDirectory;
+  if (!cache) return;
+  await FileSystem.deleteAsync(`${cache}DocumentPicker/`, { idempotent: true }).catch(() => {});
+  await walkAndDelete(cache, 0);
+}
+
+const SENSITIVE_FILE = /(\.m4a|\.aac|\.3gp|\.wav|\.mp3|\.ogg|\.flac|\.opus)$|^max-backup-.*\.json$/i;
+
+async function walkAndDelete(dir: string, depth: number): Promise<void> {
+  if (depth > 3) return;
+  let names: string[] = [];
+  try {
+    names = await FileSystem.readDirectoryAsync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    const path = `${dir}${name}`;
+    const info = await FileSystem.getInfoAsync(path).catch(() => null);
+    if (!info?.exists) continue;
+    if (info.isDirectory) await walkAndDelete(`${path}/`, depth + 1);
+    else if (SENSITIVE_FILE.test(name)) await FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {});
   }
 }
 
@@ -49,7 +90,8 @@ export async function importBackup(): Promise<"imported" | "cancelled" | "invali
   let doc: DocumentPicker.DocumentPickerResult;
   try {
     doc = await DocumentPicker.getDocumentAsync({
-      type: "application/json",
+      // Some Android file managers label .json files as text or octet-stream; the contents are validated below.
+      type: ["application/json", "text/plain", "application/octet-stream"],
       copyToCacheDirectory: true,
     });
   } catch {
@@ -68,7 +110,10 @@ export async function importBackup(): Promise<"imported" | "cancelled" | "invali
     return "invalid";
   }
 
+  const picked = doc.assets[0].uri;
   const parsed = parse(text, initialState);
+  // The picker's private copy holds the whole journal in plain text; remove it once read.
+  FileSystem.deleteAsync(picked, { idempotent: true }).catch(() => {});
   if (!parsed) {
     showAlert(
       "Cannot import backup",
@@ -90,12 +135,26 @@ export async function importBackup(): Promise<"imported" | "cancelled" | "invali
         {
           text: "Replace data",
           style: "destructive",
-          onPress: () => {
-            replaceState(parsed);
+          onPress: async () => {
+            replaceState(await dropMissingTracks(await dropMissingAudio(parsed)));
             resolve("imported");
           },
         },
       ]
     );
   });
+}
+
+/** Voice files are not inside the backup. Entries whose recording is not on this phone keep their text only. */
+async function dropMissingAudio<T extends { entries: { audio?: { uri: string } }[] }>(s: T): Promise<T> {
+  const entries = await Promise.all(
+    s.entries.map(async (e) => {
+      if (!e.audio?.uri) return e;
+      const info = await FileSystem.getInfoAsync(e.audio.uri).catch(() => null);
+      if (info?.exists) return e;
+      const { audio: _gone, ...rest } = e;
+      return rest as typeof e;
+    }),
+  );
+  return { ...s, entries };
 }

@@ -8,8 +8,6 @@ import {
   measure,
   type Measured,
   usageSupported,
-  openUsageSettings,
-  sevenDayCategoryAverage,
   CATEGORY_LABELS,
   type PhoneCategory,
 } from "@/lib/device-usage";
@@ -17,9 +15,11 @@ import { lastDays, MIN_CHECKINS, moodDistribution, moodWords, patterns } from "@
 import { useStore, type CheckIn } from "@/lib/store";
 import { font, radius, space, useTheme, type Theme } from "@/lib/theme";
 import { Button, Choice, Screen, Section, T } from "@/lib/ui";
-import { CategoryBreakdown } from "@/components/CategoryBreakdown";
 
 type Key = "mood" | "sleep" | "screen" | "stress";
+// seven equal columns: each day cell is a full seventh of the row (about 44 dp wide on a phone), so taps land easily
+// (a hair under 100/7, or rounding wraps the seventh day onto the next line)
+const CELL = "14.28%" as const;
 const series: { key: Key; label: string; norm: (c: CheckIn) => number }[] = [
   { key: "mood", label: "Mood", norm: (c) => (c.mood - 1) / 4 },
   { key: "sleep", label: "Sleep", norm: (c) => (c.sleep - 1) / 4 },
@@ -40,7 +40,6 @@ export default function Mood() {
   const t = useTheme();
   const checkins = useStore((s) => s.checkins);
   const results = useStore((s) => s.results);
-  const phoneDays = useStore((s) => s.phoneDays);
 
   // Month Calendar State
   const [calDate] = useState(() => new Date());
@@ -55,8 +54,6 @@ export default function Mood() {
   const found = patterns(checkins);
   const [phone, setPhone] = useState<Measured | null>(null);
   useFocusEffect(useCallback(() => void measure().then(setPhone), []));
-  const weekDates = lastDays(7);
-  const avg7 = sevenDayCategoryAverage(phoneDays, weekDates);
   const latest = ["phq9", "gad7", "cbi", "tech"].map((id) => results.filter((r) => r.checkup === id).at(-1)).filter((r) => !!r);
 
   const dist = moodDistribution(checkins, distRange);
@@ -108,8 +105,8 @@ export default function Mood() {
               return (
                 <Pressable
                   key={r}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: active }}
                   accessibilityLabel={label}
                   onPress={() => setDistRange(val)}
                   style={{
@@ -189,54 +186,14 @@ export default function Mood() {
         </View>
       </Section>
 
-      {phone ? (
-        <Section title="Yesterday on this phone">
-          <T>{`Screen on for ${hm(phone.yesterday)}.${
-            phone.beforeSleep != null ? ` ${phone.beforeSleep} min of that was in the hour before you slept.` : ""
-          }`}</T>
-
-          <CategoryBreakdown categories={phone.categories} avg7={avg7} t={t} />
-
-          {phone.topApps.length ? (
-            <View style={{ marginTop: space.sm }}>
-              <T v="heading" style={{ fontSize: 13, marginBottom: space.xs }}>
-                Top apps
-              </T>
-              {phone.topApps.map((a) => (
-                <View
-                  key={a.app}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    paddingVertical: space.xs,
-                    borderBottomWidth: 1,
-                    borderBottomColor: t.rule,
-                  }}>
-                  <T>{a.app}</T>
-                  <T soft>{hm(a.minutes)}</T>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          <T v="small" soft style={{ marginTop: space.sm }}>
-            Read from Android on this phone. Never sent anywhere.
+      {usageSupported ? (
+        <Section title="Phone use">
+          <T soft>
+            {phone
+              ? `Yesterday your screen was on for ${hm(phone.yesterday)}.${phone.beforeSleep != null ? ` ${phone.beforeSleep} min of that was in the hour before you slept.` : ""}`
+              : "Turn on automatic screen time to see your phone use next to your check-ins."}
           </T>
-        </Section>
-      ) : usageSupported ? (
-        <Section title="Yesterday on this phone">
-          <View
-            style={{
-              padding: space.md,
-              borderRadius: radius.md,
-              borderWidth: 1,
-              borderColor: t.rule,
-              backgroundColor: t.paper,
-              gap: space.sm,
-            }}>
-            <T soft>Turn on automatic screen time in Settings to see yesterday's phone use by category.</T>
-            <Button kind="quiet" label="Open Android Settings" onPress={openUsageSettings} />
-          </View>
+          <Button kind="quiet" label="Open screen time" onPress={() => router.push("/screen-time")} />
         </Section>
       ) : null}
 
@@ -341,9 +298,9 @@ function MonthCalendar({ checkins, date, t }: { checkins: CheckIn[]; date: Date;
       </T>
 
       {/* Weekday headers */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View style={{ flexDirection: "row" }}>
         {weekdays.map((w, idx) => (
-          <View key={idx} style={{ width: 34, alignItems: "center" }}>
+          <View key={idx} style={{ width: CELL, alignItems: "center" }}>
             <T v="small" soft style={{ fontWeight: "600" }}>
               {w}
             </T>
@@ -352,10 +309,10 @@ function MonthCalendar({ checkins, date, t }: { checkins: CheckIn[]; date: Date;
       </View>
 
       {/* Calendar Grid */}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 8 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {cells.map((dayNum, idx) => {
           if (!dayNum) {
-            return <View key={`empty-${idx}`} style={{ width: 36, height: 42 }} />;
+            return <View key={`empty-${idx}`} style={{ width: CELL, height: 48 }} />;
           }
 
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
@@ -367,12 +324,12 @@ function MonthCalendar({ checkins, date, t }: { checkins: CheckIn[]; date: Date;
               key={dateStr}
               accessibilityRole="button"
               accessibilityLabel={c ? `Day ${dayNum}: ${moodWords[c.mood - 1]}` : dateStr === todayStr ? `Day ${dayNum}, today, tap to check in` : `Day ${dayNum}, no check-in`}
-              accessibilityState={{ selected: selected === dateStr }}
+              accessibilityState={{ selected: selected === dateStr, disabled: !c && dateStr !== todayStr }}
               disabled={!c && dateStr !== todayStr}
-              onPress={() => (c ? setSelected(selected === dateStr ? null : dateStr) : router.push("/"))}
-              style={{
-                width: 36,
-                height: 42,
+              onPress={() => (c ? setSelected(selected === dateStr ? null : dateStr) : router.navigate("/"))}
+              style={{ width: CELL, height: 48, padding: 2 }}>
+              <View style={{
+                flex: 1,
                 borderRadius: radius.sm,
                 borderWidth: c || selected === dateStr ? 1.5 : 1,
                 borderColor: c || dateStr === todayStr ? t.ink : t.rule,
@@ -406,6 +363,7 @@ function MonthCalendar({ checkins, date, t }: { checkins: CheckIn[]; date: Date;
                   {dateStr === todayStr ? "+" : " "}
                 </T>
               )}
+              </View>
             </Pressable>
           );
         })}

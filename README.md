@@ -19,8 +19,8 @@ MAX is **not** a doctor or a therapist. It never diagnoses, never discusses medi
 | **Insights** | Mood, sleep, phone use and pressure on one timeline; plain-language patterns ("on nights with an hour of phone before bed, your sleep was 2.5 points lower"); check-up trends; a text summary the student can share with a counsellor |
 | **Explore** | Tools (one-minute cyclic-sigh breathing, 5-4-3-2-1 grounding, Thought Reframe, Spiral Breaker), six short cited lessons, and check-ups: PHQ-9, GAD-7, Copenhagen Burnout Inventory and a weekly tech-stress check |
 | **Help** | On every screen. One tap to call 112, Tele-MANAS (14416 / 1-800-891-4416) or Vandrevala Foundation |
-| **Settings** | Rename the companion, reminders (daily check-in, wind-down before bed), fingerprint/PIN app lock, automatic screen time, campus pulse, export or delete everything |
-| **Campus pulse** | Anonymous averages for a college, shown only once 10 or more students contribute (k-anonymity, k ≥ 10) |
+| **Settings** | Rename the companion, reminders (at most one a day, skipped once you've checked in), fingerprint/PIN app lock, automatic screen time, optional Google backup, sharing with your college, export or delete everything |
+| **Your college** | Opt-in: a student joins their college with a code from its counsellor and shares anonymous check-in numbers. College staff register (MAX verifies the college first) and see a dashboard of totals from 10 or more students, never one student |
 
 **Automatic screen time** (Android APK only): with the student's permission, MAX reads when the screen was on and which apps were in the foreground, works out when they fell asleep and how much they used the phone in the hour before, and fills in the check-in. All of it is computed on the phone.
 
@@ -30,7 +30,7 @@ Every message passes a deterministic classifier (English, Hindi, Hinglish; 91 la
 
 ## Privacy, in one paragraph
 
-No account, no email, no phone number. Check-ins, journal, check-ups, tools and chat history live only on the phone. Chat text goes to our server and to Groq (which does not train on API data) with emails and phone numbers redacted. Campus pulse is opt-in and sends three numbers with a random ID. Export and delete-everything are in Settings.
+No account needed. Check-ins, journal, check-ups, tools and chat history live on the phone; an optional Google backup keeps a copy on our server for a new phone. Chat text goes to our server and to Groq (which does not train on API data) with emails and phone numbers redacted. Sharing with a college is opt-in: each day's three check-in numbers, journal categories and, if given, year of study, with a random ID, never text or a name; it can be stopped and deleted any time. Export and delete-everything are in Settings.
 
 ## Quick start
 
@@ -44,7 +44,7 @@ First time building an app? Follow [`docs/setup.md`](docs/setup.md) step by step
 
 ## Stack
 
-Expo SDK 57 (React Native 0.86, TypeScript) · Expo Router with API routes on EAS Hosting · Groq (`openai/gpt-oss-120b` for replies, `openai/gpt-oss-safeguard-20b` for risk) · on-device storage (AsyncStorage) · Neon Postgres for the optional campus pulse · a small Kotlin module for Android usage stats · Node's built-in test runner.
+Expo SDK 57 (React Native 0.86, TypeScript) · Expo Router with API routes on EAS Hosting · Groq (`openai/gpt-oss-120b` for replies, `openai/gpt-oss-safeguard-20b` for risk) · on-device storage (AsyncStorage) · Neon Postgres for the optional backup and college sharing · a small Kotlin module for Android usage stats · Node's built-in test runner.
 
 Everything runs on free tiers with no credit card. See [`docs/architecture.md`](docs/architecture.md).
 

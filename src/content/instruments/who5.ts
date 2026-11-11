@@ -7,7 +7,7 @@ export const who5: Instrument = {
   category: "wellness",
   minutes: 1,
   clinical: true,
-  intro: "Over the past 2 weeks, please indicate how you have been feeling.",
+  intro: "Please indicate for each of the five statements which is closest to how you have been feeling over the last two weeks. Notice that higher numbers mean better well-being.",
   whatYouGet: [
     "Overall well-being score (0–100)",
     "Benchmark against typical student well-being",
@@ -30,12 +30,11 @@ export const who5: Instrument = {
   ],
   scoring: { kind: "transform", multiply: 4 },
   // WHO publishes one cut-off: a 0–100 score of 50 or below suggests low well-being and is a reason to ask about mood.
-  // (28 or below is the published likely-depression screen.) No other bands are claimed.
   bands: [
-    { min: 0, label: "Low well-being", note: "A score of 50 or below is the published cut-off for low well-being. It is worth talking to someone you trust or a campus counsellor." },
-    { min: 51, label: "Above the low well-being cut-off", note: "Above the published cut-off of 50. Higher is better." },
+    { min: 0, label: "Low well-being", note: "A percentage score below 50 (raw score below 13) has been suggested as a cut-off for poor mental well-being. It is worth talking to someone you trust or a campus counsellor." },
+    { min: 51, label: "Above the low well-being cut-off", note: "At or above the suggested cut-off of 50. Higher is better." },
   ],
-  source: "World Health Organization (1998). Psychiatric Research Unit, Mental Health Centre North Zealand.",
-  licence: "CC BY-NC-SA 3.0 IGO.",
-  scienceUrl: "https://www.psykiatri-regionh.dk/who-5/who-5-questionnaires/Pages/default.aspx",
+  source: "World Health Organization. The World Health Organization-Five Well-Being Index (WHO-5). Geneva: WHO; 2024 (WHO/UCN/MSD/MHE/2024.1).",
+  licence: "CC BY-NC-SA 3.0 IGO. WHO does not endorse this app.",
+  scienceUrl: "https://cdn.who.int/media/docs/default-source/mental-health/who-5_english-original4da539d6ed4b49389e3afe47cda2326a.pdf",
 };

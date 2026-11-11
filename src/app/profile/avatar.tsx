@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { THIS_DEVICE } from "@/lib/platform";
+import React, { useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { router, Stack } from "expo-router";
 import { useStore, update } from "@/lib/store";
@@ -23,7 +24,10 @@ export default function AvatarPickerScreen() {
 
   const list: AvatarItem[] = activeTab === "a" ? AVATARS_A : AVATARS_B;
 
+  const saving = useRef(false);
   const save = () => {
+    if (saving.current) return;
+    saving.current = true;
     update((s) => ({ ...s, avatar: selected }));
     router.back();
   };
@@ -44,7 +48,7 @@ export default function AvatarPickerScreen() {
         </View>
         <T v="heading">Your profile look</T>
         <T soft v="small">
-          Hand-drawn line art. Visible only on this phone.
+          {`Hand-drawn line art. Visible only on ${THIS_DEVICE}.`}
         </T>
       </View>
 

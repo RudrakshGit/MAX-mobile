@@ -3,11 +3,11 @@ import { StyleSheet, View, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   withSequence,
   withDelay,
   runOnJS,
+  Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
@@ -41,10 +41,11 @@ export function MaxPeekingIntro({ onFinished }: { onFinished?: () => void }) {
     // Small delay after splash screen fade to pop up playfully
     const timer = setTimeout(() => {
       // 1. Peek up smoothly with curious peek
-      translateY.value = withSpring(16, { damping: 13, stiffness: 130 }, (fin) => {
+      const standard = Easing.bezier(0.2, 0, 0, 1);
+      translateY.value = withTiming(16, { duration: 600, easing: standard }, (fin) => {
         if (fin) {
-          // 2. Pop tiny greeting bubble
-          bubbleScale.value = withSpring(1, { damping: 12, stiffness: 160 });
+          // 2. The greeting balloon appears (no pop)
+          bubbleScale.value = withTiming(1, { duration: 220, easing: standard });
         }
       });
 
@@ -52,13 +53,13 @@ export function MaxPeekingIntro({ onFinished }: { onFinished?: () => void }) {
       // At 350ms: Cheeky wink and head tilt left 😉
       const t1 = setTimeout(() => {
         setPeekPhase("wink");
-        rotation.value = withSpring(-8, { damping: 10, stiffness: 140 });
+        rotation.value = withTiming(-4, { duration: 320, easing: Easing.bezier(0.2, 0, 0, 1) });
       }, 350);
 
       // At 1100ms: Big cheerful grin and head tilt right 😄
       const t2 = setTimeout(() => {
         setPeekPhase("grin");
-        rotation.value = withSpring(8, { damping: 10, stiffness: 140 });
+        rotation.value = withTiming(4, { duration: 420, easing: Easing.bezier(0.37, 0, 0.63, 1) });
       }, 1100);
 
       // At 1900ms: Return head straight before ducking down
@@ -93,13 +94,9 @@ export function MaxPeekingIntro({ onFinished }: { onFinished?: () => void }) {
     } catch {}
     setPeekPhase("celebrating");
     // Extra little bounce & wiggle when tapped
-    rotation.value = withSequence(
-      withTiming(-10, { duration: 120 }),
-      withTiming(10, { duration: 120 }),
-      withTiming(0, { duration: 120 })
-    );
+    rotation.value = withTiming(0, { duration: 200 });
     translateY.value = withSequence(
-      withSpring(0, { damping: 10 }),
+      withTiming(4, { duration: 240, easing: Easing.bezier(0.2, 0, 0, 1) }),
       withDelay(700, withTiming(120, { duration: 280 }, () => {
         runOnJS(setVisible)(false);
         if (onFinished) runOnJS(onFinished)();
@@ -155,7 +152,7 @@ export function MaxPeekingIntro({ onFinished }: { onFinished?: () => void }) {
         </Animated.View>
 
         {/* Peeking MAX face */}
-        <Pressable onPress={handleTap} accessibilityLabel="Max peeking to say hello">
+        <Pressable onPress={handleTap} accessibilityRole="button" accessibilityLabel="Max peeking to say hello">
           <Max
             size={78}
             customEyes={currentEyes}

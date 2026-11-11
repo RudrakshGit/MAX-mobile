@@ -16,6 +16,10 @@ export function lastDays(n: number, end = new Date()): string[] {
 }
 
 export const MIN_CHECKINS = 5;
+
+/** A reflection heading that is just the template's label ("Pattern/Observation"), as older servers saved them. */
+export const isTemplateLabel = (h: string | undefined) =>
+  !h || /^(section\s*\d|pattern|observation|context|reality|action|small experiment|try this)(\s*[/&-]\s*\w+)*$/i.test(h.trim());
 export const moodWords = ["heavy", "low", "okay", "good", "bright"];
 
 export function patterns(all: CheckIn[], now = new Date()): string[] {

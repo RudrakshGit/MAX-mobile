@@ -54,14 +54,14 @@ test("CBI: personal and study burnout subscales with reverse item", () => {
   const v1 = score(cbi, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   assert.equal(v1.parts?.personal, 0);
   assert.equal(v1.parts?.study, 14.3);
-  assert.equal(v1.band, "Low");
+  assert.equal(v1.band, undefined); // CBI: no published cut-offs
 
   // All 100: item 13 reverse gives 0, personal avg is 100, study avg is 600/7 = 85.7
   const v2 = score(cbi, [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]);
   assert.equal(v2.parts?.personal, 100);
   assert.equal(v2.parts?.study, 85.7);
   assert.equal(v2.score, 100); // max of personal and study
-  assert.equal(v2.band, "Severe");
+  assert.equal(v2.band, undefined);
 });
 
 test("WHO-5: raw sum multiplied by 4 transform", () => {
@@ -87,12 +87,12 @@ test("Loneliness-3: 3–9 sum", () => {
 test("ASRS-6: threshold-count scoring", () => {
   const v1 = score(asrs6, [0, 0, 0, 0, 0, 0]);
   assert.equal(v1.score, 0);
-  assert.equal(v1.band, "Unlikely ADHD");
+  assert.equal(v1.band, "Below the screening threshold");
 
   // Items 0-2 >= 2 are positive (2), items 3-5 >= 3 are positive (3) -> all 6 positive
   const v2 = score(asrs6, [2, 2, 2, 3, 3, 3]);
   assert.equal(v2.score, 6);
-  assert.equal(v2.band, "Consistent with Adult ADHD");
+  assert.equal(v2.band, "May be consistent with adult ADHD");
 });
 
 test("AQ-10: threshold-count scoring", () => {
@@ -131,12 +131,12 @@ test("PSWQ: worry sum with 5 reverse items", () => {
   // All 1s: 11 direct items = 11, 5 reverse items (1->5) = 25 -> total 36
   const v1 = score(pswq, Array(16).fill(1));
   assert.equal(v1.score, 36);
-  assert.equal(v1.band, "Low worry");
+  assert.equal(v1.band, undefined); // PSWQ: Meyer 1990 gives no cut-offs
 
   // All 5s: 11 direct items = 55, 5 reverse items (5->1) = 5 -> total 60
   const v2 = score(pswq, Array(16).fill(5));
   assert.equal(v2.score, 60);
-  assert.equal(v2.band, "High worry");
+  assert.equal(v2.band, undefined);
 });
 
 test("RSES: self-esteem sum with 5 reverse items", () => {
@@ -145,13 +145,13 @@ test("RSES: self-esteem sum with 5 reverse items", () => {
   const allMax = [3, 3, 0, 3, 0, 3, 3, 0, 0, 0];
   const v1 = score(rses, allMax);
   assert.equal(v1.score, 30);
-  assert.equal(v1.band, "High self-esteem");
+  assert.equal(v1.band, undefined); // RSES: "no discrete cut-off points" (UMD)
 
   // Positive direct 0s, negative 3s (which reverse to 0): all effective 0s -> 0
   const allMin = [0, 0, 3, 0, 3, 0, 0, 3, 3, 3];
   const v2 = score(rses, allMin);
   assert.equal(v2.score, 0);
-  assert.equal(v2.band, "Low self-esteem");
+  assert.equal(v2.band, undefined);
 });
 
 test("BRS: resilience mean with 3 reverse items", () => {
@@ -234,4 +234,21 @@ test("SAPS: official item order, standards 1,3,5,7 and discrepancy 2,4,6,8", () 
   saps.items.forEach((it, i) => assert.equal(it.subscale, i % 2 === 0 ? "standards" : "discrepancy"));
   assert.equal(saps.items[0].text, "I have high expectations for myself.");
   assert.equal(saps.items[7].text, "I am hardly ever satisfied with my performance.");
+});
+
+test("ASRS-6: the shaded answers shown on screen are exactly the ones the scoring counts", () => {
+  const positive = (asrs6.scoring as { positive: (i: number, v: number) => boolean }).positive;
+  asrs6.items.forEach((item, i) => {
+    const counted = asrs6.options.filter((o) => positive(i, o.value)).map((o) => o.value);
+    assert.deepEqual(item.shade, counted, item.id);
+  });
+});
+
+test("wording pinned to the official forms (checked 27 Oct 2026)", () => {
+  assert.equal(phq9.items[8].text, "Thoughts that you would be better off dead or of hurting yourself in some way");
+  assert.match(phq9.intro, /bothered by any of the following problems\?$/);
+  assert.equal(gad7.items[0].text, "Feeling nervous, anxious or on edge");
+  assert.equal(rses.items[0].text, "I feel that I'm a person of worth, at least on an equal plane with others.");
+  assert.equal(pswq.items[11].text, "I have been a worrier all my life.");
+  assert.match(aq10.items[7].text, /types of plant etc\)$/);
 });

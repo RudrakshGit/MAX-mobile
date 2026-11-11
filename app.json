@@ -2,7 +2,7 @@
   "expo": {
     "name": "MAX",
     "slug": "max-companion",
-    "version": "1.2.0",
+    "version": "1.8.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "max",
@@ -16,7 +16,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 3,
+      "versionCode": 14,
       "allowBackup": false
     },
     "web": {
@@ -24,6 +24,9 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-async-storage-size",
+      "./plugins/with-usage-queries",
+      "@react-native-google-signin/google-signin",
       [
         "expo-notifications",
         {
@@ -69,7 +72,8 @@
           "microphonePermission": "MAX needs microphone access to record voice journal entries.",
           "enableBackgroundPlayback": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "reactCompiler": true

@@ -46,14 +46,20 @@ export async function POST(req: Request) {
   const context = typeof body?.context === "string" ? redact(body.context).slice(0, 1200) : "";
 
   const isReflect = body?.mode === "reflect";
+  // A helpline card was shown a few messages ago (the phone says so). The latest message itself was checked above;
+  // the earlier one already got its card, so it isn't scored again, and MAX keeps talking in care mode.
+  const afterCrisis = !isReflect && body?.afterCrisis === true;
   const system = isReflect
     ? reflectPrompt(name, replyLanguage(last.text))
-    : systemPrompt(name, risk.level === "distress", context, replyLanguage(last.text));
+    : systemPrompt(name, risk.level === "distress", context, replyLanguage(last.text), afterCrisis);
 
   const convo = messages.map((m) => ({ role: m.role, content: redact(m.text) }));
   const recent = messages.filter((m) => m.role === "user").slice(-3).map((m) => redact(m.text));
-  const [text, r] = await Promise.all([reply(convo, system, key), read(recent, key)]);
-  const sg = needsSafeguard(risk.level, r, last.text.trim().split(/\s+/).length) ? await modelRisk(recent, key) : null;
+  // Before: every follow-up was scored together with the message that triggered the card, so each one showed the
+  // card again and MAX never answered ("ye manas kaun hai", "baat karo na"). A new crisis message still gets one.
+  const scored = afterCrisis ? recent.slice(-1) : recent;
+  const [text, r] = await Promise.all([reply(convo, system, key), read(scored, key)]);
+  const sg = needsSafeguard(risk.level, r, last.text.trim().split(/\s+/).length) ? await modelRisk(scored, key) : null;
   const level = finalLevel(risk.level, r, sg);
   if (r === null) console.warn(JSON.stringify({ event: "safety.read.unavailable", safeguard: sg === null ? "none" : "ran" }));
   if (level === "crisis") return Response.json({ kind: "crisis" });
@@ -65,5 +71,5 @@ export async function POST(req: Request) {
   // The full reply is inspected before it is sent, never after.
   const verdict = inspectOutput(cleaned);
   if (!verdict.safe) console.warn(JSON.stringify({ event: "safety.output_guard.blocked", code: verdict.code }));
-  return Response.json({ kind: "reply", text: verdict.safe ? cleaned : GUARD_FALLBACK, distress: level === "distress", emotions: r?.emotions });
+  return Response.json({ kind: "reply", text: verdict.safe ? cleaned : GUARD_FALLBACK, distress: level === "distress", care: afterCrisis, emotions: r?.emotions });
 }

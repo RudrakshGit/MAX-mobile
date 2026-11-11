@@ -1,16 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, View, Text, Pressable } from "react-native";
+import { Appearance, StyleSheet, View, Text, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
-  withSequence,
   runOnJS,
   Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { font, space, useTheme } from "@/lib/theme";
+import { THEMES, font, space, useTheme } from "@/lib/theme";
 import { Max } from "./Max";
 import { useReducedMotionSafe } from "./useReducedMotionSafe";
 
@@ -30,6 +28,10 @@ export function MaxLogoIntro({ onFinished }: { onFinished?: () => void }) {
 
   // Animations
   const containerOpacity = useSharedValue(1);
+  // Android draws the splash in the phone's theme before MAX runs; start in that colour and fade into MAX's own, so
+  // a dark MAX on a light phone doesn't flash (M16 finding 11).
+  const splashPaper = (Appearance.getColorScheme() === "dark" ? THEMES.dark : THEMES.light).paper;
+  const themeIn = useSharedValue(splashPaper === t.paper ? 1 : 0);
   const logoScale = useSharedValue(prefersReduced ? 1 : 0.88);
   const characterRotation = useSharedValue(0);
   const characterScale = useSharedValue(1);
@@ -39,6 +41,9 @@ export function MaxLogoIntro({ onFinished }: { onFinished?: () => void }) {
   const dismiss = () => {
     if (isDismissing.current) return;
     isDismissing.current = true;
+    // Safety net: with system animations off the fade's callback may never report "finished",
+    // and a splash that never leaves locks the student out of the app.
+    setTimeout(cleanup, 600);
 
     containerOpacity.value = withTiming(
       0,
@@ -51,7 +56,10 @@ export function MaxLogoIntro({ onFinished }: { onFinished?: () => void }) {
     );
   };
 
+  const cleaned = useRef(false);
   const cleanup = () => {
+    if (cleaned.current) return;
+    cleaned.current = true;
     setVisible(false);
     onFinished?.();
   };
@@ -69,52 +77,41 @@ export function MaxLogoIntro({ onFinished }: { onFinished?: () => void }) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {}
 
-    if (prefersReduced) {
-      subtitleOpacity.value = withTiming(1, { duration: 200 });
-      const timer = setTimeout(dismiss, 1400);
-      return () => clearTimeout(timer);
-    }
-
-    // 1. Entrance spring: scale up logo smoothly
-    logoScale.value = withSpring(1, { damping: 14, stiffness: 140 });
-
-    // 2. Subtitle reveals
+    // The reduced-motion answer arrives asynchronously. Starting the timeline once and never restarting it
+    // keeps the dismiss timer alive (it used to be cleared when the answer changed, freezing the splash).
+    // Calm timing curves, no springs (M16): the logo settles in, MAX winks, tilts a little, then smiles.
+    const standard = Easing.bezier(0.2, 0, 0, 1);
+    themeIn.value = withTiming(1, { duration: 450, easing: standard });
     subtitleOpacity.value = withTiming(1, { duration: 400 });
-    subtitleTranslateY.value = withSpring(0, { damping: 15, stiffness: 120 });
+    subtitleTranslateY.value = withTiming(0, { duration: 450, easing: standard });
+    logoScale.value = withTiming(1, { duration: 450, easing: standard });
 
-    // 3. Playful wink at 350ms
     const t1 = setTimeout(() => {
       if (isDismissing.current) return;
       setPhase("wink");
-      characterRotation.value = withSpring(-6, { damping: 11, stiffness: 150 });
-      characterScale.value = withSequence(
-        withSpring(1.08, { damping: 10, stiffness: 180 }),
-        withSpring(1, { damping: 12, stiffness: 140 })
-      );
+      characterRotation.value = withTiming(-4, { duration: 300, easing: standard });
     }, 350);
 
-    // 4. Smile & cheerful face at 950ms
     const t2 = setTimeout(() => {
       if (isDismissing.current) return;
       setPhase("smile");
-      characterRotation.value = withSpring(0, { damping: 12, stiffness: 140 });
+      characterRotation.value = withTiming(0, { duration: 350, easing: standard });
     }, 950);
 
-    // 5. Fade out at 1650ms (total ~1.95s)
-    const t3 = setTimeout(() => {
-      dismiss();
-    }, 1650);
+    const t3 = setTimeout(dismiss, 1650);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [prefersReduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
   }));
+  const themeInStyle = useAnimatedStyle(() => ({ opacity: themeIn.value }));
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],
@@ -139,11 +136,12 @@ export function MaxLogoIntro({ onFinished }: { onFinished?: () => void }) {
       style={[
         StyleSheet.absoluteFill,
         styles.overlay,
-        { backgroundColor: t.paper },
+        { backgroundColor: splashPaper },
         containerAnimatedStyle,
       ]}
       pointerEvents={isDismissing.current ? "none" : "auto"}
     >
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: t.paper }, themeInStyle]} />
       <Pressable
         style={styles.contentWrap}
         onPress={dismiss}

@@ -6,6 +6,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -58,6 +59,58 @@ class UsageStatsModule : Module() {
       out
     }
 
+    // Raw, privacy-light events for [start, end] so the maths (and its tests) live in JS:
+    //   ev = flat list of [code, timeMs, pkgIndex] triples, codes:
+    //   1 app resumed, 2 app paused/stopped, 3 screen off / locked / shutdown, 4 screen on, 5 unlocked.
+    //   pkgs = one entry per package seen, with its label, category and whether it is a launcher or launchable.
+    // Never content, titles or notifications.
+    AsyncFunction("appEvents") { start: Double, end: Double ->
+      val pm = context.packageManager
+      // The phone's default launcher only (Settings also declares a fallback home screen and must not be hidden).
+      val home = setOfNotNull(
+        pm.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY)
+          ?.activityInfo?.packageName
+      )
+      val index = LinkedHashMap<String, Int>()
+      val ev = ArrayList<Double>()
+      val events = usm().queryEvents(start.toLong(), end.toLong())
+      val e = UsageEvents.Event()
+      while (events.hasNextEvent()) {
+        events.getNextEvent(e)
+        @Suppress("DEPRECATION")
+        val code = when (e.eventType) {
+          UsageEvents.Event.MOVE_TO_FOREGROUND -> 1
+          // ACTIVITY_STOPPED is not used: it arrives after the app's next screen has already resumed,
+          // and would wrongly end the session.
+          UsageEvents.Event.MOVE_TO_BACKGROUND -> 2
+          UsageEvents.Event.SCREEN_NON_INTERACTIVE, UsageEvents.Event.KEYGUARD_SHOWN -> 3
+          26 /* DEVICE_SHUTDOWN */ -> 3
+          UsageEvents.Event.SCREEN_INTERACTIVE -> 4
+          UsageEvents.Event.KEYGUARD_HIDDEN -> 5
+          else -> 0
+        }
+        if (code == 0) continue
+        val pkgIdx = if (code <= 2) {
+          val pkg = e.packageName ?: continue
+          index.getOrPut(pkg) { index.size }
+        } else -1
+        ev.add(code.toDouble()); ev.add(e.timeStamp.toDouble()); ev.add(pkgIdx.toDouble())
+      }
+      val pkgs = index.keys.map { pkg ->
+        val info = try { pm.getApplicationInfo(pkg, 0) } catch (_: Exception) { null }
+        val cat = info?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) it.category else -1 } ?: -1
+        mapOf(
+          "pkg" to pkg,
+          "app" to (info?.let { pm.getApplicationLabel(it).toString() } ?: pkg),
+          "category" to categoryName(cat),
+          "home" to (pkg in home),
+          "launchable" to (pm.getLaunchIntentForPackage(pkg) != null),
+          "self" to (pkg == context.packageName),
+        )
+      }
+      mapOf("ev" to ev, "pkgs" to pkgs)
+    }
+
     // Foreground minutes per app in [start, end], largest first.
     AsyncFunction("topApps") { start: Double, end: Double, limit: Int ->
       val pm = context.packageManager
@@ -86,19 +139,20 @@ class UsageStatsModule : Module() {
           val info = try { pm.getApplicationInfo(pkg, 0) } catch (_: Exception) { null }
           val label = info?.let { pm.getApplicationLabel(it).toString() } ?: pkg
           val cat = info?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) it.category else -1 } ?: -1
-          val catName = when (cat) {
-            ApplicationInfo.CATEGORY_GAME -> "game"
-            ApplicationInfo.CATEGORY_AUDIO -> "audio"
-            ApplicationInfo.CATEGORY_VIDEO -> "video"
-            ApplicationInfo.CATEGORY_IMAGE -> "image"
-            ApplicationInfo.CATEGORY_SOCIAL -> "social"
-            ApplicationInfo.CATEGORY_NEWS -> "news"
-            ApplicationInfo.CATEGORY_MAPS -> "maps"
-            ApplicationInfo.CATEGORY_PRODUCTIVITY -> "productivity"
-            else -> "undefined"
-          }
-          mapOf("app" to label, "pkg" to pkg, "category" to catName, "minutes" to ms / 60000.0)
+          mapOf("app" to label, "pkg" to pkg, "category" to categoryName(cat), "minutes" to ms / 60000.0)
         }
     }
+  }
+
+  private fun categoryName(cat: Int) = when (cat) {
+    ApplicationInfo.CATEGORY_GAME -> "game"
+    ApplicationInfo.CATEGORY_AUDIO -> "audio"
+    ApplicationInfo.CATEGORY_VIDEO -> "video"
+    ApplicationInfo.CATEGORY_IMAGE -> "image"
+    ApplicationInfo.CATEGORY_SOCIAL -> "social"
+    ApplicationInfo.CATEGORY_NEWS -> "news"
+    ApplicationInfo.CATEGORY_MAPS -> "maps"
+    ApplicationInfo.CATEGORY_PRODUCTIVITY -> "productivity"
+    else -> "undefined"
   }
 }

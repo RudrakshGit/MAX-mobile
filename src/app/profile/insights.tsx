@@ -1,6 +1,7 @@
 import { router, type Href } from "expo-router";
 import { Pressable, View } from "react-native";
 import { useStore } from "@/lib/store";
+import { isTemplateLabel } from "@/lib/insights";
 import { radius, space, useTheme } from "@/lib/theme";
 import { Screen, Section, T } from "@/lib/ui";
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
@@ -64,7 +65,7 @@ export default function InsightsHistory() {
                 <T v="heading" style={{ fontSize: 17 }}>
                   {item.title}
                 </T>
-                {item.sections?.[0] ? (
+                {item.sections?.[0] && !isTemplateLabel(item.sections[0].heading) ? (
                   <T soft numberOfLines={1} style={{ fontSize: 13 }}>
                     {item.sections[0].heading}
                   </T>

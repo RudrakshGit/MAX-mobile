@@ -293,10 +293,10 @@ async function insightOnce(
   const systemPrompt = `You are an empathetic, evidence-informed student psychological companion named MAX for Indian higher education students.
 Write a thoughtful, 3-section reflective article on the theme: "${theme.title}".
 Format: Return strictly a valid JSON object matching the schema with exactly 3 sections.
-Sections:
-- Section 1: Pattern/Observation (describe the pattern gently, citing at least 1 metric from signals if available).
-- Section 2: Context/Reality (common humanity, validate why this happens in student life, e.g. exams, hostel, expectations).
-- Section 3: Action/Small experiment (one 2-minute actionable experiment the student can try today).
+Sections (in this order; "tag" is exactly the word given, "heading" is your own short, specific title of 3–8 words, never a label like "Pattern/Observation"):
+- tag "Pattern": describe the pattern gently, citing at least 1 metric from signals if available.
+- tag "Reality": common humanity, why this happens in student life (exams, hostel, expectations).
+- tag "Try this": one 2-minute experiment the student can try today.
 
 What the numbers mean (use only these meanings, do not invent causes the data does not show):
 - checkins7 is how many of the last 7 days the student checked in, NOT an average.
@@ -304,6 +304,7 @@ What the numbers mean (use only these meanings, do not invent causes the data do
 - phoneMin is average minutes of phone use before sleep (omit if absent). feelings and influences are [id, count] pairs from the last week.
 - Never judge how often the student checks in (no "only 3 of 7 days"); mention it at most as "this week's check-ins".
 - Do not assume late-night screens, caffeine or habits unless a number above shows it. If a number is missing, do not mention it.
+- Name a feeling only if it is in "feelings". If the numbers look good, say so warmly; do not invent a problem.
 
 Rules:
 1. Each section body must be between 60 and 110 words.
@@ -369,9 +370,18 @@ Rules:
     const hasNumbers = /\d/.test(parsed.sections.map((x: { body: string }) => x.body).join(" "));
     if (!hasNumbers && (signals.checkins7 > 0 || signals.mood !== undefined)) return null;
 
+    // Models sometimes echo the template's labels; keep the article reading like an article.
+    const TAGS = ["Pattern", "Reality", "Try this"];
+    const generic = /^(section\s*\d|pattern|observation|context|reality|action|small experiment)(\s*[/&-]\s*\w+)*$/i;
+    const sections = (parsed.sections as InsightSection[]).slice(0, 3).map((sec, i) => ({
+      tag: TAGS[i],
+      heading: generic.test(sec.heading.trim()) ? theme.sections[i]?.heading ?? sec.heading : sec.heading.trim(),
+      body: sec.body.trim(),
+    })) as [InsightSection, InsightSection, InsightSection];
+
     return {
       title: parsed.title.trim(),
-      sections: [parsed.sections[0], parsed.sections[1], parsed.sections[2]],
+      sections,
     };
   } catch {
     return null;

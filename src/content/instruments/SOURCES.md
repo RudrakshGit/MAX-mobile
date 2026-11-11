@@ -4,52 +4,60 @@ This document records the exact sources, licences, checking dates, and verificat
 
 Context: Free, non-commercial, no-ads academic mobile app for college students.
 
-## Verification status (updated 14 October 2026)
+## Verification status (updated 27 October 2026)
 
-The first version of this file claimed every instrument was verified by the project team. It was not: the first implementation was written from memory. After an audit the following were rewritten from the primary documents and have unit tests that pin the official wording:
+The first version of this file claimed every instrument was verified by the project team. It was not: the first implementation was written from memory. Since then each instrument has been compared with the owner's own form or the original paper, and unit tests in `score.test.ts` pin the official wording and scoring.
 
 | Instrument | Checked against | State |
 |---|---|---|
-| SCI | Espie et al. 2014, BMJ Open, Appendix (all 8 items, answer options, 0–32 scoring, cut-off ≤ 16) | verified |
-| SAPS | Rice, Richardson & Tueller 2014, Table 1 (8 items, standards 1,3,5,7 / discrepancy 2,4,6,8) | verified |
-| O*NET Mini-IP | O*NET Mini-IP Development Report, Appendix A (30 items, 0–4 scale) | verified |
-| WHO-5 | WHO wording and 6 options; only published cut-off (≤ 50) is used | verified, bands trimmed |
-| BAS-2 | items 8 and 10 corrected to published wording; no cut-offs claimed | to re-check against the Handbook PDF |
-| PHQ-9, GAD-7, ASRS-6, AQ-10, RSES, PSWQ, BRS, Mini-IPIP, CBI, Loneliness-3 | wording matches the widely published versions | **not yet compared line by line with the primary PDF; the project guide or a psychology faculty member should sign off before release** |
+| SCI | Espie et al. 2014, BMJ Open, Appendix (8 items, options, 0–32, cut-off ≤ 16) | verified |
+| SAPS | Rice, Richardson & Tueller 2014, Table 1 | verified |
+| O*NET Mini-IP | O*NET Mini-IP Development Report, Appendix A (30 items, 0–4) | verified |
+| PHQ-9, GAD-7 | Pfizer forms and instruction manual on phqscreeners.com | verified; punctuation and intro fixed; licence text is Pfizer's own wording |
+| ASRS v1.1 screener | Harvard NCS 6-question form, asrs.php terms and the 28 Feb 2024 scoring update | verified; printed 0–6 rule kept; the two levels of shading are shown on screen as the terms require; result text is the form's own |
+| AQ-10 adult | ARC Cambridge AQ10.pdf and Allison et al. 2012 | verified; item 8 "etc" restored; copyright line added |
+| RSES | UMD sociology scale and FAQ | verified; item 1 "I'm" restored; bands removed (owner: "no discrete cut-off points") |
+| PSWQ | Meyer et al. 1990, Table 1 | verified; item 12 restored; only the scale ends are labelled; bands removed (no cut-offs in the paper) |
+| WHO-5 | WHO 2024 publication WHO/UCN/MSD/MHE/2024.1 | verified; WHO's instruction text and "below 50" wording; citation updated |
+| Three-Item Loneliness | Hughes et al. 2004 (PMC2394670), Table 1 | verified; intro follows the paper's lead-in |
+| Mini-IPIP | IPIP scoring key and permission page | verified (IPIP: public domain; no cut-offs) |
+| CBI | NFA Denmark official English CBI | personal items verified; study items are MAX's adaptation of the work scale (no clean English student version exists; Campos et al. 2013 is Portuguese); bands removed (none in the official scoring) |
+| BRS | secondary only (PsyToolkit) | items and cut-offs match the secondary source; primary (Smith 2008/2013) not read — needs a human check |
+| BAS-2 | secondary only (EMERGE, UCSD) | items match the secondary source; primary (Tylka & Wood-Barcalow 2015) not read — needs a human check |
 | Tech-stress | MAX's own wording, not a validated scale (labelled as such) | by design |
 
-Bands that no publication defines (WHO-5 "moderate/high", Loneliness-3 bands, BAS-2 bands, SCI 17–24/25–32, CBI "severe ≥ 90") were removed; those instruments now show the raw score or only the published cut-off.
+Bands that no publication defines were removed (WHO-5 "moderate/high", Loneliness-3, BAS-2, SCI 17–24/25–32, CBI, RSES, PSWQ); those instruments show the raw score or only the published cut-off.
 
 ---
 
 ## 1. PHQ-9 (Patient Health Questionnaire-9)
 - **Construct:** Depressive symptom severity screening
 - **Primary Citation:** Kroenke, K., Spitzer, R. L., & Williams, J. B. (2001). The PHQ-9: validity of a brief depression severity measure. *Journal of General Internal Medicine*, 16(9), 606–613. [DOI: 10.1046/j.1525-1497.2001.016009606.x](https://pubmed.ncbi.nlm.nih.gov/11556941/)
-- **Licence:** Public domain. Pfizer holds no copyright restrictions on clinical/educational use.
+- **Licence:** Pfizer forms: "No permission required to reproduce, translate, display or distribute." (not described as public domain).
 - **Verification:** Item 9 nonzero response acts as an unconditional safety flag that opens crisis helplines (Tele-MANAS 14416) before scoring results.
 
 ## 2. GAD-7 (Generalised Anxiety Disorder-7)
 - **Construct:** General anxiety symptom severity
 - **Primary Citation:** Spitzer, R. L., Kroenke, K., Williams, J. B., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder: the GAD-7. *Archives of Internal Medicine*, 166(10), 1092–1097. [DOI: 10.1001/archinte.166.10.1092](https://pubmed.ncbi.nlm.nih.gov/16717171/)
-- **Licence:** Public domain / Pfizer open access.
-- **Verification:** 7 items scored 0–3, sum 0–21. Published cutoffs at 5, 10, 15.
+- **Licence:** Pfizer forms: "No permission required to reproduce, translate, display or distribute." (not described as public domain).
+- **Verification:** 7 items scored 0–3, sum 0–21. Manual cut-points 5, 10, 15 (10+ recommended for further evaluation).
 
 ## 3. CBI (Copenhagen Burnout Inventory)
 - **Construct:** Personal and student/work burnout
 - **Primary Citation:** Kristensen, T. S., Borritz, M., Villadsen, E., & Christensen, K. B. (2005). The Copenhagen Burnout Inventory: A new tool for the assessment of burnout. *Work & Stress*, 19(3), 192–207. [DOI: 10.1080/02678370500297720](https://pubmed.ncbi.nlm.nih.gov/19223398/)
-- **Licence:** Free for academic and research use without permission.
-- **Verification:** 6 personal items and 7 study items on 0–100 scale. Item 13 reverse-keyed.
+- **Licence:** Official English text published by NFA Denmark; authors state it may be adapted.
+- **Verification:** 6 personal items (official) and 7 study items (MAX adaptation of the work scale), 0–100, mean per scale, item 13 reverse-keyed. No cut-offs in the official scoring.
 
 ## 4. WHO-5 Well-Being Index
 - **Construct:** Positive psychological well-being
 - **Primary Citation:** World Health Organization (1998). Use of well-being measures in primary health care—the DepCare project. Psychiatric Research Unit, Mental Health Centre North Zealand. [WHO Publication](https://www.psykiatri-regionh.dk/who-5/who-5-questionnaires/Pages/default.aspx)
 - **Licence:** Creative Commons Attribution-NonCommercial-ShareAlike 3.0 IGO (CC BY-NC-SA 3.0 IGO).
-- **Verification:** 5 items scored 0–5; raw sum multiplied by 4 gives standard 0–100 index. ≤50 indicates reduced well-being.
+- **Verification:** 5 items scored 0–5; raw sum multiplied by 4 gives the 0–100 percentage. WHO 2024: a percentage below 50 (raw below 13) has been suggested as a cut-off for poor well-being.
 
 ## 5. Three-Item Loneliness Scale (TILS / UCLA-3)
 - **Construct:** Subjective social isolation and loneliness
 - **Primary Citation:** Hughes, M. E., Waite, L. J., Hawkley, L. C., & Cacioppo, J. T. (2004). A Short Scale for Measuring Loneliness in Large Surveys: Results From Two Population-Based Studies. *Research on Aging*, 26(6), 655–672. [DOI: 10.1177/0164027504268574](https://pubmed.ncbi.nlm.nih.gov/18504506/)
-- **Licence:** UCLA Loneliness Studies grants free use for non-profit research and education without prior permission.
+- **Licence:** Not stated in the paper (open author manuscript PMC2394670).
 - **Verification:** 3 items scored 1–3, sum 3–9. Higher means lonelier. No published bands; the app shows the raw score only.
 
 ## 6. ASRS v1.1 6-Question Screener (Adult ADHD)
@@ -79,20 +87,20 @@ Bands that no publication defines (WHO-5 "moderate/high", Loneliness-3 bands, BA
 ## 10. PSWQ (Penn State Worry Questionnaire)
 - **Construct:** Trait worry and cognitive rumination
 - **Primary Citation:** Meyer, T. J., Miller, M. L., Metzger, R. L., & Borkovec, T. D. (1990). Development and validation of the Penn State Worry Questionnaire. *Behaviour Research and Therapy*, 28(6), 487–495. [DOI: 10.1016/0005-7967(90)90135-6](https://pubmed.ncbi.nlm.nih.gov/2076098/)
-- **Licence:** Public domain (confirmed by T. D. Borkovec, personal communication cited in CamCOPS documentation).
-- **Verification:** 16 items on 1–5 scale. Items 1, 3, 8, 10, 11 reverse-scored. Range 16–80.
+- **Licence:** Reported as public domain via CamCOPS (secondary; Borkovec personal communication). Original paper © 1990 Pergamon Press.
+- **Verification:** 16 items on 1–5 scale (only ends labelled). Items 1, 3, 8, 10, 11 reverse-scored. Range 16–80. No cut-offs in the paper; group mean 48.8 (SD 13.8).
 
 ## 11. RSES (Rosenberg Self-Esteem Scale)
 - **Construct:** Global self-esteem and self-acceptance
 - **Primary Citation:** Rosenberg, M. (1965). *Society and the Adolescent Self-Image*. Princeton University Press. [UMD Department of Sociology](https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale)
-- **Licence:** Public domain per University of Maryland Department of Sociology; free to use without permission.
-- **Verification:** 10 items on 0–3 scale. Items 3, 5, 8, 9, 10 reverse-scored. Total 0–30.
+- **Licence:** No formal licence published by UMD; the department page describes use for research and education.
+- **Verification:** 10 items on 0–3 scale. Items 3, 5, 8, 9, 10 reverse-scored. Total 0–30. UMD FAQ: no discrete cut-off points.
 
 ## 12. BRS (Brief Resilience Scale)
 - **Construct:** Ability to bounce back and recover from stress
 - **Primary Citation:** Smith, B. W., et al. (2008). The brief resilience scale: assessing the ability to bounce back. *International Journal of Behavioral Medicine*, 15(3), 194–200. [DOI: 10.1080/10705500802222972](https://pubmed.ncbi.nlm.nih.gov/18696313/)
 - **Licence:** Salford PsyTech and EdInstruments list as unrestricted / open access.
-- **Verification:** 6 items on 1–5 scale. Items 2, 4, 6 reverse-scored. Mean score 1.0–5.0. Cutoffs at 1.00–2.99 (low), 3.00–4.30 (normal), 4.31–5.00 (high).
+- **Verification:** 6 items on 1–5 scale. Items 2, 4, 6 reverse-scored. Mean score 1.0–5.0. Cut-offs 1.00–2.99 (low), 3.00–4.30 (normal), 4.31–5.00 (high) as attributed by PsyToolkit to Smith et al. 2013 p.177 (primary not read).
 
 ## 13. SAPS (Short Almost Perfect Scale)
 - **Construct:** Adaptive and maladaptive perfectionism
@@ -110,7 +118,7 @@ Bands that no publication defines (WHO-5 "moderate/high", Loneliness-3 bands, BA
 - **Construct:** Vocational and career interests across Holland RIASEC codes
 - **Primary Citation:** Rounds, J., Su, R., Lewis, P., & Rivkin, D. (2010). O*NET® Interest Profiler Short Form, National Center for O*NET Development. [O*NET IP Documentation](https://www.onetcenter.org/IP.html)
 - **Licence:** Creative Commons Attribution 4.0 International (CC BY 4.0).
-- **Verification:** 30 items (5 per Holland dimension) on 1–3 scale. Profile scoring returns top 3 themes.
+- **Verification:** 30 items (5 per Holland dimension) on the official 0–4 scale (Strongly dislike … Strongly like). Profile scoring returns top 3 themes.
 
 ## 16. Tech-Stress Check
 - **Construct:** Weekly digital overload, invasion, complexity, and uncertainty

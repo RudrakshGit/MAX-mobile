@@ -58,7 +58,7 @@ eas deploy --prod --environment production
 curl -X POST https://<your-url>/api/chat -H 'content-type: application/json' -d '{"messages":[{"role":"user","text":"hi"}]}'
 ```
 
-Optional campus pulse: create a free database at <https://neon.tech>, then add `DATABASE_URL` the same way as the key and deploy again. The table is created on first use.
+Optional Google backup and college sharing: create a free database at <https://neon.tech>, then add `DATABASE_URL` the same way as the key, plus `GOOGLE_WEB_CLIENT_ID` (M11) and `ADMIN_EMAILS` (your Google email, to review college registrations; M15), and deploy again. Tables are created on first use.
 
 ## 5. Build the APK
 

@@ -1,3 +1,4 @@
+import { isWeb } from "@/lib/platform";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -15,9 +16,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -55,6 +54,11 @@ export function FloatingMax() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const enabled = useFloatingMax((s) => s.enabled);
+  const [built, setBuilt] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setBuilt(true), 1500);
+    return () => clearTimeout(id);
+  }, []);
   const isDiggingExit = useFloatingMax((s) => s.isDiggingExit);
   const quickMenuOpen = useFloatingMax((s) => s.quickMenuOpen);
   const contextEmotion = useFloatingMax((s) => s.contextEmotion);
@@ -68,14 +72,9 @@ export function FloatingMax() {
 
   // Digging exit animation values
   const digOffsetY = useSharedValue(0);
-  const digShakeX = useSharedValue(0);
   const digScale = useSharedValue(1);
   const digOpacity = useSharedValue(1);
 
-  // Jump and land animation values on screen navigation
-  const jumpY = useSharedValue(0);
-  const jumpScaleX = useSharedValue(1);
-  const jumpScaleY = useSharedValue(1);
 
   // Wake up MAX whenever user touches anywhere on the screen
   useEffect(() => {
@@ -86,23 +85,13 @@ export function FloatingMax() {
 
   useEffect(() => {
     if (isDiggingExit) {
-      triggerHaptic("medium");
-      digShakeX.value = withRepeat(
-        withSequence(
-          withTiming(-4, { duration: 55 }),
-          withTiming(4, { duration: 55 })
-        ),
-        10,
-        true
-      );
-      digOffsetY.value = withTiming(44, { duration: 1100, easing: Easing.in(Easing.quad) });
-      digScale.value = withSequence(
-        withTiming(0.88, { duration: 300 }),
-        withTiming(0.2, { duration: 800 })
-      );
+      triggerHaptic("light");
+      // Switched off: MAX sinks calmly out of sight (no shaking), then the widget goes.
+      digOffsetY.value = withTiming(44, { duration: 900, easing: Easing.bezier(0.3, 0, 1, 1) });
+      digScale.value = withTiming(0.6, { duration: 900, easing: Easing.bezier(0.3, 0, 1, 1) });
       digOpacity.value = withSequence(
-        withTiming(1, { duration: 750 }),
-        withTiming(0, { duration: 350 }, (finished) => {
+        withTiming(1, { duration: 600 }),
+        withTiming(0, { duration: 300 }, (finished) => {
           if (finished) {
             runOnJS(finishFloatingMaxDigExit)();
           }
@@ -110,7 +99,6 @@ export function FloatingMax() {
       );
     } else {
       digOffsetY.value = 0;
-      digShakeX.value = 0;
       digScale.value = 1;
       digOpacity.value = 1;
     }
@@ -159,7 +147,9 @@ export function FloatingMax() {
       if (dx < -30) setFacing(-1);
       else if (dx > 30) setFacing(1);
     }
-  }, [touchPos, snapshot.behavior, posX.value, posY.value]);
+    // posX/posY are read inside the effect only; reading .value during render makes Reanimated warn and can tear.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [touchPos, snapshot.behavior]);
 
   // Sync when screen dimensions change
   useEffect(() => {
@@ -181,31 +171,9 @@ export function FloatingMax() {
       return;
     }
 
+    // A small calm hop on a new tab: the behaviour goes to "jump" and MAX plays its smallHop clip.
     controls.send("screenFocus");
     controls.poke();
-
-    // Physical jump and land animation for the floating widget
-    jumpY.value = withSequence(
-      withTiming(4, { duration: 90, easing: Easing.quad }),
-      withTiming(-28, { duration: 230, easing: Easing.out(Easing.quad) }),
-      withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) }, (finished) => {
-        if (finished) {
-          runOnJS(triggerHaptic)("light");
-        }
-      })
-    );
-    jumpScaleX.value = withSequence(
-      withTiming(1.15, { duration: 90 }),
-      withTiming(0.88, { duration: 230 }),
-      withTiming(1.24, { duration: 180 }),
-      withSpring(1.0, { damping: 10, stiffness: 160 })
-    );
-    jumpScaleY.value = withSequence(
-      withTiming(0.85, { duration: 90 }),
-      withTiming(1.16, { duration: 230 }),
-      withTiming(0.74, { duration: 180 }),
-      withSpring(1.0, { damping: 10, stiffness: 160 })
-    );
   }, [pathname, controls]);
 
   const handleTap = useCallback(() => {
@@ -252,13 +220,13 @@ export function FloatingMax() {
       // Update directional fly pose
       runOnJS(controls.updateDirection)(e.translationX, e.translationY);
 
-      // Detect vigorous shake gesture (rapid left-right flick reversals)
+      // Detect vigorous shake gesture (rapid left-right flick reversals only)
       const now = Date.now();
-      if (Math.abs(e.velocityX) > 400) {
+      if (Math.abs(e.velocityX) > 650) {
         if (lastVelX.value !== 0 && (lastVelX.value > 0 !== e.velocityX > 0)) {
-          if (now - lastShakeTime.value < 450) {
+          if (now - lastShakeTime.value < 350) {
             shakeCount.value += 1;
-            if (shakeCount.value >= 3) {
+            if (shakeCount.value >= 4) {
               shakeCount.value = 0;
               runOnJS(controls.send)("shake");
               runOnJS(triggerHaptic)("heavy");
@@ -273,16 +241,16 @@ export function FloatingMax() {
     })
     .onEnd(() => {
       "worklet";
-      // Released anywhere on screen -> play slower landing animation right where user placed him!
+      // Released anywhere on screen -> snappy landing right where user placed him
       runOnJS(controls.send)("panEnd");
 
       const targetX = posX.value;
       const targetY = posY.value;
 
-      // Slow gentle landing dip in place
+      // Quick, responsive landing dip in place
       posY.value = withSequence(
-        withTiming(Math.min(targetY + 10, maxY), { duration: 280, easing: Easing.in(Easing.quad) }),
-        withSpring(targetY, { damping: 12, stiffness: 140 }, (finished) => {
+        withTiming(Math.min(targetY + 6, maxY), { duration: 90, easing: Easing.out(Easing.quad) }),
+        withTiming(targetY, { duration: 220, easing: Easing.bezier(0.2, 0, 0, 1) }, (finished) => {
           if (finished) {
             runOnJS(controls.send)("animationEnd");
             runOnJS(triggerHaptic)("light");
@@ -304,10 +272,10 @@ export function FloatingMax() {
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        { translateX: posX.value + digShakeX.value },
-        { translateY: posY.value + digOffsetY.value + jumpY.value },
-        { scaleX: facing * digScale.value * jumpScaleX.value },
-        { scaleY: digScale.value * jumpScaleY.value },
+        { translateX: posX.value },
+        { translateY: posY.value + digOffsetY.value },
+        { scaleX: facing * digScale.value },
+        { scaleY: digScale.value },
       ],
       opacity: digOpacity.value,
     };
@@ -341,20 +309,17 @@ export function FloatingMax() {
 
   // Never before consent, and not on screens that are forms, dense with controls, or already show their own MAX.
   const onboarded = useStore((s) => s.onboarded);
-  const isQuietScreen = QUIET_PATHS.some((p) => pathname.startsWith(p));
+  // Pushed screens (profile, tools, lessons, help...) have their own back button and plenty of content to cover:
+  // the floating companion lives on the main tabs only.
+  const isQuietScreen = QUIET_PATHS.some((p) => pathname.startsWith(p)) || segments[0] !== "(tabs)";
 
 
-  // Never show on Home, Talk, or empty Journal (where Max transforms into static companion), or when disabled
-  if (
-    isHomeScreen ||
-    isTalkScreen ||
-    isJournalEmptyScreen ||
-    !onboarded ||
-    isQuietScreen ||
-    (!enabled && !isDiggingExit)
-  ) {
-    return null;
-  }
+  // Never show on Home, Talk, or empty Journal (where Max transforms into static companion), or when disabled.
+  // Hidden is not unmounted: building MAX again on every tab change held the first frame of the new tab for about
+  // half a second (M16 speed), so MAX is built once, a moment after the app opens, and only shown or hidden.
+  const hidden = isHomeScreen || isTalkScreen || isJournalEmptyScreen || isQuietScreen;
+  // not on the web: the app sits in a phone-width column there, and the floating companion is an app extra
+  if (isWeb || !onboarded || !built || (!enabled && !isDiggingExit)) return null;
 
   // If external context overrides emotion (e.g. thinking during chat AI response) and not dragging
   const effectiveBehavior =
@@ -363,7 +328,7 @@ export function FloatingMax() {
       : (contextEmotion ?? snapshot.behavior);
 
   return (
-    <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, hidden ? { display: "none" } : null]}>
       <GestureDetector gesture={combinedGesture}>
         {/* Free floating independent character with no surrounding bubble/shape */}
         <Animated.View
@@ -389,6 +354,7 @@ export function FloatingMax() {
               gaze={isDiggingExit ? null : gazeOffset}
               customEyes={isDiggingExit ? "sad" : undefined}
               customMouth={isDiggingExit ? "sad" : undefined}
+              reducedMotion={hidden ? true : undefined}
               boil
             />
             {isDiggingExit ? (
@@ -406,7 +372,7 @@ export function FloatingMax() {
         </Animated.View>
       </GestureDetector>
 
-      <MaxQuickActions visible={quickMenuOpen} />
+      <MaxQuickActions visible={quickMenuOpen && !hidden} />
     </View>
   );
 }

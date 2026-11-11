@@ -6,6 +6,8 @@ export type Item = {
   options?: Option[];
   reverse?: boolean;
   subscale?: string;
+  /** Option values printed shaded on the official form (ASRS requires the shading to be shown). */
+  shade?: number[];
 };
 
 export type Scoring =
@@ -38,6 +40,7 @@ export type Instrument = {
   scoring: Scoring;
   bands: Band[];
   clinical: boolean;            // true → "screening result, not a diagnosis" + counsellor card
+  ownWording?: true;            // MAX's own questions, not a validated scale (the weekly tech-stress check)
   crisisItem?: number;          // PHQ-9: index 8 → helplines before the result if value > 0
   ageNote?: string;             // e.g. ASRS/AQ-10 "designed for adults"
   source: string;

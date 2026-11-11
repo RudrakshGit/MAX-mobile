@@ -52,7 +52,8 @@ export async function ensureMicPermission(): Promise<boolean> {
         message: "MAX needs microphone access to record voice journal entries.",
         buttonPositive: "Allow",
       });
-      if (res === PermissionsAndroid.RESULTS.GRANTED) return true;
+      // a "no" is the answer: falling through to expo-audio's request showed Android's prompt a second time
+      return res === PermissionsAndroid.RESULTS.GRANTED;
     } catch {
       // fallback to expo-audio permission check
     }

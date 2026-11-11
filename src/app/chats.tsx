@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { showAlert } from "@/lib/dialog";
 import { router } from "expo-router";
 import { FlatList, Pressable, View } from "react-native";
@@ -23,14 +24,23 @@ export default function Chats() {
 
   const sorted = [...chats].sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
 
-  const onNew = () => {
-    startChat();
+  // one tap goes back once, however fast the row is tapped
+  const leaving = useRef(false);
+  const leave = () => {
+    if (leaving.current) return;
+    leaving.current = true;
     router.back();
+  };
+  const onNew = () => {
+    if (leaving.current) return;
+    startChat();
+    leave();
   };
 
   const onSelect = (id: string) => {
+    if (leaving.current) return;
     update(() => ({ activeChatId: id }));
-    router.back();
+    leave();
   };
 
   const onDelete = (chat: Chat) => {

@@ -1,6 +1,5 @@
 import { suggestTags, transcribeAudioFile } from "@/lib/api";
 import { getState, update } from "@/lib/store";
-import { classifyRisk } from "@/safety/classifier";
 import { acceptRoman } from "./transcript";
 
 const retryCounts = new Map<string, number>();
@@ -12,6 +11,9 @@ export async function processPendingTranscripts(): Promise<void> {
 
   try {
     const s = getState();
+    // Audio never leaves the phone without the voice-to-text consent. Entries saved without it stay
+    // "pending" and are transcribed only if the student turns voice-to-text on later.
+    if (!s.consents.voice) return;
     const pending = s.entries.filter(
       (e) => e.audio?.uri && e.transcript?.status === "pending"
     );
@@ -43,12 +45,18 @@ export async function processPendingTranscripts(): Promise<void> {
       const rawTranscript = await transcribeAudioFile(entry.audio.uri);
       if (rawTranscript) {
         const raw = rawTranscript.trim();
-        // Run safety check
-        classifyRisk(raw);
+        // Crisis wording in a transcript is surfaced where the student will see it: the journal list and the
+        // entry screen both run the classifier on transcript text and show the helpline line / crisis card.
 
-        // Fetch tags and potential Romanisation
+        // Romanising Hindi is part of turning speech into readable text (voice consent). Feeling tags are the
+        // separate "AI help in the journal" feature, so they are only kept when that consent is on.
         const tagResult = await suggestTags(raw);
         const roman = acceptRoman(raw, tagResult.roman);
+        const allowTags = getState().consents.ai;
+        if (!allowTags) {
+          tagResult.feelings = [];
+          tagResult.influences = [];
+        }
 
         update((state) => ({
           entries: state.entries.map((e) =>

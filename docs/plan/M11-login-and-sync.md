@@ -131,4 +131,35 @@ Never log tokens, emails or envelopes. Rate-limit auth routes like chat.
 `src/safety/*`, `/api/pulse` behaviour (campus stays anonymous), instruments.
 
 ## Completion report
-_Fill in when done._
+**4 Nov 2026 (Claude).** Code done and checked; switching it on needs the owner's Google Cloud and Neon steps below.
+
+What was built:
+- Server: `src/server/{db,session,google,rateLimit}.ts`, routes `api/auth/google`, `api/auth/signout`, `api/sync`, `api/account`, `api/delete-account`. Tables are created on first use. Session tokens are stored only as SHA-256. Sync is one envelope per user with a revision; `PUT /api/sync?base=N` returns 409 if another phone wrote first.
+- Phone: `src/lib/sync.ts` (merge, tombstones for deletions, per-phone fields never uploaded), `src/lib/cloud.ts` (sign in/out, `syncNow`, auto-sync 20 s after a change and when the app goes to the background), `src/features/account/google.ts`, Backup screen `src/app/profile/account.tsx`, optional onboarding step, Delete everything signs out first.
+- Field decisions: not synced = `anonId`, app lock, sync info, active chat, voice recordings, songs added from the phone, pending transcripts. Everything else syncs.
+
+Checks:
+- 14 sync tests (`src/lib/sync.test.ts`).
+- Server against a real Postgres 17 (`scripts/m11-server-check.mts`, instructions in its header): valid and invalid Google tokens (garbage, wrong audience/issuer, unverified email, expired), 401s, first write, stale write 409, isolation between two users, bad body 400, over 3 MB 413, second phone restore, sign-out ends one session only, account delete cascades and leaves other users alone, deletion page escapes input. All pass; red-checked.
+- Not done: step 8 with real Google accounts on two devices. It needs the OAuth clients; the two-phone case is covered by the server check (two sessions, one account) and the merge tests.
+
+### Done on 7 Nov 2026 (owner signed in, Claude did the clicks)
+- Google Cloud project `max-companion-514004` (owner rudroidm@gmail.com): consent screen "MAX", External, **Testing** mode (publishing needs a privacy-policy URL on the Branding page first; until then add each tester under Audience → Test users, up to 100).
+- Web client `123498008922-r3scs585958v0ansp6faqcfetf3bfk05.apps.googleusercontent.com` (no secret needed by MAX). Android client for `com.eg18.max` with the debug-keystore SHA-1.
+- Expo environment: `ADMIN_EMAILS`, `DATABASE_URL` (Secret, the existing Neon `max-db`, US East), `GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`; the client ID is also in `.env.local` for local builds.
+- `DATABASE_URL` must be **Sensitive**, not Secret: EAS Hosting does not deploy Secret variables. Preview `https://max-companion--cis6ho7h8e.expo.app` checked: database reachable (tables created), Google audience set (bad token → 401 invalid-token). Still to do: add test users, promote to production (owner), rebuild the APK.
+
+### Owner steps (all free, no card)
+1. **Google Cloud** (console.cloud.google.com): new project "MAX" → OAuth consent screen: External, app name MAX, support email, scopes `openid`, `email`, `profile` only (these need no Google review) → **Publish app** (otherwise only test users can sign in).
+2. **Web client:** Credentials → Create OAuth client → *Web application*. Its client ID goes into two variables: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (app build) and `GOOGLE_WEB_CLIENT_ID` (server).
+3. **Android client(s):** Create OAuth client → *Android*, package `com.eg18.max`, one per signing key SHA-1:
+   - local builds (debug keystore): `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`;
+   - EAS builds: SHA-1 from `eas credentials` → Android → Keystore;
+   - Play Store: the "App signing key" SHA-1 from Play Console.
+   A missing SHA-1 shows as `DEVELOPER_ERROR` when signing in.
+4. **Neon** (neon.tech): new project, region Singapore. Copy the pooled connection string → `DATABASE_URL` as an EAS environment variable (sensitive) and in `.env.local` for local runs.
+5. Put `GOOGLE_WEB_CLIENT_ID` and `DATABASE_URL` in the EAS server environment and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in the build environment, deploy a preview (`eas deploy`), test sign-in, then promote when happy (owner's call).
+6. Rebuild the APK so it contains the client ID. Until then the Backup screen says backup isn't switched on, and onboarding skips the backup step.
+7. **Before a wide release:** sign the APK with a private keystore (EAS-managed is fine). Local APKs are signed with the public debug keystore, so anyone could build an app that Google treats as MAX.
+8. **Deletion requests from the web page** land in the `deletion_requests` table. Email the address to confirm it's theirs (the page says so), then within 30 days:
+   `delete from users where lower(email) = lower('<address>');` (backup and sessions go with it), then `delete from deletion_requests where lower(email) = lower('<address>');`.

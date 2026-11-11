@@ -30,16 +30,16 @@ export function musicNeeds(s: State, now: Date = new Date()): Need[] {
   // 4. Latest PSWQ checkup
   const pswqResult = s.results?.filter((r) => r.checkup === "pswq").pop();
   if (pswqResult) {
-    const isHigh =
-      pswqResult.score >= 60 ||
-      (pswqResult.band && /high/i.test(pswqResult.band));
+    // No published cut-off exists; for a music suggestion only, use one SD above the student mean in
+    // Meyer et al. (1990): 48.8 + 13.8 ≈ 63. Nothing clinical is shown to the student.
+    const isHigh = pswqResult.score >= 63;
     if (isHigh && !needs.includes("anxiety")) {
       needs.push("anxiety");
     }
   }
 
   // 5. Latest ASRS checkup
-  const asrsResult = s.results?.filter((r) => r.checkup === "asrs").pop();
+  const asrsResult = s.results?.filter((r) => r.checkup === "asrs6").pop();
   if (asrsResult) {
     const isPositive = asrsResult.flag || asrsResult.score >= 4 || (asrsResult.band && /positive/i.test(asrsResult.band));
     if (isPositive && !needs.includes("focus")) {

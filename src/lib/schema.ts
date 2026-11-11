@@ -1,15 +1,23 @@
 import type {
+  CollegeLink,
   Activity,
   Chat,
   CheckIn,
   Consents,
   Entry,
   Insight,
+  Exam,
+  Helped,
   Msg,
+  MusicApp,
+  MyTrack,
+  PhoneDay,
   Plan,
   Reframe,
+  ReminderPrefs,
   Result,
   SafetyPlan,
+  SyncInfo,
   State,
 } from "./store";
 
@@ -30,7 +38,7 @@ const list = (x: unknown): Obj[] => (Array.isArray(x) ? x.filter(isObj) : []);
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-const KINDS = new Set(["crisis", "distress", "offline"]);
+const KINDS = new Set(["crisis", "distress", "care", "offline"]);
 const THEMES = new Set(["system", "light", "dark"]);
 const CHECKUPS = new Set([
   "phq9",
@@ -59,7 +67,9 @@ function checkins(x: unknown): CheckIn[] {
     const mood = int(o.mood, 1, 5), sleep = int(o.sleep, 1, 5), stress = int(o.stress, 1, 5);
     const screen = num(o.screen);
     if (!date || !DATE.test(date) || !mood || !sleep || !stress || screen === undefined || screen < 0) continue;
-    byDate.set(date, { date, mood, sleep, stress, screen, screenMin: num(o.screenMin) });
+    const win = str(o.win, 140)?.trim();
+    const at = num(o.at);
+    byDate.set(date, { date, mood, sleep, stress, screen, screenMin: num(o.screenMin), ...(win ? { win } : {}), ...(at ? { at } : {}) });
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -210,6 +220,37 @@ function musicRecent(x: unknown): { id: string; at: number }[] {
     .slice(-20);
 }
 
+const NEEDS = new Set(["calm", "anxiety", "focus", "sleep", "noise", "uplift"]);
+const PLATFORMS = new Set(["spotify", "ytmusic", "youtube", "jiosaavn", "apple", "other"]);
+const APPS = new Set(["spotify", "ytmusic", "jiosaavn"]);
+
+function myMusic(x: unknown): MyTrack[] {
+  return list(x)
+    .flatMap((o): MyTrack[] => {
+      const id = str(o.id, 60), title = str(o.title, 120)?.trim(), addedAt = num(o.addedAt) ?? 0;
+      if (!id || !title) return [];
+      const need = typeof o.need === "string" && NEEDS.has(o.need) ? (o.need as MyTrack["need"]) : undefined;
+      if (o.kind === "link") {
+        const url = str(o.url, 500);
+        if (!url || !/^https:\/\/[^\s]+$/i.test(url)) return [];
+        const platform = typeof o.platform === "string" && PLATFORMS.has(o.platform) ? (o.platform as MyTrack["platform"]) : "other";
+        return [{ id, kind: "link", title, url, platform, ...(need ? { need } : {}), addedAt }];
+      }
+      if (o.kind === "file") {
+        const uri = str(o.uri, 500);
+        // only copies MAX made in its own music folder
+        if (!uri || !/^file:\/\/.+\/music\/[^/]+$/.test(uri)) return [];
+        return [{ id, kind: "file", title, uri, ...(need ? { need } : {}), addedAt }];
+      }
+      return [];
+    })
+    .slice(0, 200);
+}
+
+function musicApps(x: unknown): MusicApp[] {
+  return Array.isArray(x) ? [...new Set(x.filter((a): a is MusicApp => typeof a === "string" && APPS.has(a)))] : [];
+}
+
 function safetyPlan(x: unknown): SafetyPlan | undefined {
   if (!isObj(x)) return undefined;
   return {
@@ -219,8 +260,19 @@ function safetyPlan(x: unknown): SafetyPlan | undefined {
     places: str(x.places, 1000) ?? "",
     professionals: str(x.professionals, 1000) ?? "",
     reasons: str(x.reasons, 1000) ?? "",
+    ...(callContact(x) ?? {}),
   };
 }
+
+/** A name plus a dialable number, or nothing: a half-filled contact would give a call button that fails. */
+function callContact(x: Record<string, unknown>): { callName: string; callPhone: string } | undefined {
+  const name = str(x.callName, 40)?.trim();
+  const phone = str(x.callPhone, 20)?.trim();
+  if (!name || !phone || !PHONE.test(phone)) return undefined;
+  return { callName: name, callPhone: phone };
+}
+
+export const PHONE = /^\+?[0-9][0-9 -]{5,17}$/;
 
 function results(x: unknown): Result[] {
   return list(x).flatMap((o) => {
@@ -278,8 +330,8 @@ function plans(x: unknown): Plan[] {
   });
 }
 
-function phoneDays(x: unknown): { date: string; minutes: Record<string, number> }[] {
-  const byDate = new Map<string, { date: string; minutes: Record<string, number> }>();
+function phoneDays(x: unknown): PhoneDay[] {
+  const byDate = new Map<string, PhoneDay>();
   for (const o of list(x)) {
     const date = str(o.date);
     if (!date || !DATE.test(date) || !isObj(o.minutes)) continue;
@@ -289,7 +341,15 @@ function phoneDays(x: unknown): { date: string; minutes: Record<string, number> 
         minutes[k.slice(0, 30)] = Math.round(v * 10) / 10;
       }
     }
-    byDate.set(date, { date, minutes });
+    const screenOn = num(o.screenOn);
+    const pickups = num(o.pickups);
+    byDate.set(date, {
+      date,
+      minutes,
+      ...(screenOn !== undefined && screenOn >= 0 && screenOn <= 1440 ? { screenOn: Math.round(screenOn) } : {}),
+      ...(pickups !== undefined && pickups >= 0 && pickups < 5000 ? { pickups: Math.round(pickups) } : {}),
+      ...(o.v === 2 ? { v: 2 } : {}),
+    });
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
 }
@@ -363,13 +423,86 @@ export function sanitize(raw: unknown, fresh: () => State): State {
     safetyPlan: safetyPlan(raw.safetyPlan),
     consents,
     musicRecent: musicRecent(raw.musicRecent),
+    myMusic: myMusic(raw.myMusic),
+    musicApps: musicApps(raw.musicApps),
     simpleFont: raw.simpleFont === true,
+    maxMotion: raw.maxMotion === "calm" || raw.maxMotion === "still" ? raw.maxMotion : "normal",
     themePreference: typeof raw.themePreference === "string" && THEMES.has(raw.themePreference) ? (raw.themePreference as "system" | "light" | "dark") : "system",
     results: results(raw.results),
     reframes: reframes(raw.reframes),
     plans: plans(raw.plans),
     phoneDays: phoneDays(raw.phoneDays),
+    tombstones: list(raw.tombstones)
+      .flatMap((o) => {
+        const id = str(o.id, 80), at = num(o.at);
+        return id && at !== undefined ? [{ id, at }] : [];
+      })
+      .slice(0, 1000),
+    sync: syncInfo(raw.sync),
+    helped: list(raw.helped)
+      .flatMap((o): Helped[] => {
+        const id = str(o.id, 60), tool = str(o.tool, 60), at = num(o.at);
+        if (!id || !tool || at === undefined || typeof o.helped !== "boolean") return [];
+        const mood = int(o.mood, 1, 5);
+        return [{ id, tool, at, helped: o.helped, ...(mood ? { mood } : {}) }];
+      })
+      .slice(0, 300),
+    exams: list(raw.exams)
+      .flatMap((o): Exam[] => {
+        const id = str(o.id, 60), name = str(o.name, 60)?.trim(), date = str(o.date);
+        return id && name && date && DATE.test(date) ? [{ id, name, date }] : [];
+      })
+      .slice(0, 30),
+    reminders: reminderPrefs(raw.reminders, d.reminders, {
+      remindAt: remindAt && HHMM.test(remindAt) ? remindAt : undefined,
+      bedtime: bedtime && HHMM.test(bedtime) ? bedtime : undefined,
+    }),
+    lastOpenAt: num(raw.lastOpenAt),
+    counsellor: counsellor(raw.counsellor),
+    college: collegeLink(raw.college),
   };
+}
+
+function syncInfo(x: unknown): SyncInfo | undefined {
+  if (!isObj(x)) return undefined;
+  const rev = int(x.rev, 0, 1e9) ?? 0;
+  const email = str(x.email, 120), name = str(x.name, 80), lastHash = str(x.lastHash, 60), lastAt = num(x.lastAt), error = str(x.error, 200);
+  return { rev, ...(email ? { email } : {}), ...(name ? { name } : {}), ...(lastHash ? { lastHash } : {}), ...(lastAt ? { lastAt } : {}), ...(error ? { error } : {}) };
+}
+
+function reminderPrefs(x: unknown, d: ReminderPrefs, legacy: { remindAt?: string; bedtime?: string }): ReminderPrefs {
+  // before v1.4 the only setting was a fixed daily time; anyone who had set a reminder has seen the choice already
+  if (!isObj(x)) return { ...d, mode: legacy.remindAt ? "fixed" : "off", ...(legacy.remindAt || legacy.bedtime ? { asked: true } : {}) };
+  const mode = x.mode === "smart" || x.mode === "fixed" || x.mode === "off" ? x.mode : d.mode;
+  return { mode, exams: typeof x.exams === "boolean" ? x.exams : d.exams, ...(x.asked === true ? { asked: true } : {}) };
+}
+
+function collegeLink(x: unknown): CollegeLink | undefined {
+  if (!isObj(x)) return undefined;
+  const id = str(x.id, 40), name = str(x.name, 120), city = str(x.city, 60);
+  if (!id || !/^[0-9a-f-]{36}$/.test(id) || !name || !city) return undefined;
+  const year = int(x.year, 1, 6);
+  const c = isObj(x.counsellor) ? x.counsellor : null;
+  const cName = c ? str(c.name, 60) : undefined, cPhone = c ? str(c.phone, 20) : undefined, cHours = c ? str(c.hours, 60) : undefined;
+  const exams = Array.isArray(x.exams)
+    ? x.exams.flatMap((e) => (isObj(e) && str(e.name, 60) && typeof e.date === "string" && DATE.test(e.date) ? [{ name: str(e.name, 60)!, date: e.date }] : [])).slice(0, 20)
+    : [];
+  return {
+    id,
+    name,
+    city,
+    ...(year ? { year } : {}),
+    ...(cName && cPhone && PHONE.test(cPhone) ? { counsellor: { name: cName, phone: cPhone, ...(cHours ? { hours: cHours } : {}) } } : {}),
+    exams,
+    joinedAt: num(x.joinedAt) ?? Date.now(),
+    ...(x.gone === true ? { gone: true } : {}),
+  };
+}
+
+function counsellor(x: unknown): { name: string; phone: string } | undefined {
+  if (!isObj(x)) return undefined;
+  const name = str(x.name, 40)?.trim(), phone = str(x.phone, 20)?.trim();
+  return name && phone && PHONE.test(phone) ? { name, phone } : undefined;
 }
 
 /** Accepts the v3, v2 envelope or a bare v1 state. Returns null when the blob is unusable. */

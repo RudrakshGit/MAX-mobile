@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lastDays, patterns, moodDistribution, insightSignals } from "./insights.ts";
+import { lastDays, patterns, moodDistribution, insightSignals, isTemplateLabel } from "./insights.ts";
 
 const now = new Date(2026, 8, 29);
 const days = lastDays(10, now);
@@ -64,4 +64,9 @@ test("insightSignals on empty state returns checkins7: 0 and empty arrays, never
   assert.deepEqual(sig.avoidTitles, []);
   assert.equal("text" in (sig as any), false);
   assert.equal(JSON.stringify(sig).includes("sensitive secret journal diary text"), false);
+});
+
+test("template labels from older reflections are recognised, real headings are not", () => {
+  for (const h of ["Pattern/Observation", "Reality", "Try this", "Section 2", "pattern & context"]) assert.equal(isTemplateLabel(h), true, h);
+  for (const h of ["Why stress peaks around exams", "Two-minute mindful pause", "Small wins this week"]) assert.equal(isTemplateLabel(h), false, h);
 });

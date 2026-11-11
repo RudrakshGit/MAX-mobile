@@ -38,7 +38,7 @@ export default function CourseDetailScreen() {
 
   return (
     <Page>
-      <Stack.Screen options={{ title: course.title }} />
+      <Stack.Screen options={{ title: "Course" }} />
 
       <View style={{ gap: space.md, paddingBottom: space.xl }}>
         {/* Header Hero */}
@@ -86,6 +86,8 @@ export default function CourseDetailScreen() {
               return (
                 <Pressable
                   key={d.day}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Day ${d.day}: ${d.title}${isDone ? ", done" : ""}`}
                   onPress={() => router.push(`/course/${course.id}/${d.day}`)}
                   style={({ pressed }) => [
                     styles.dayRow,
@@ -127,7 +129,7 @@ export default function CourseDetailScreen() {
           <T v="small" soft>
             Self-guided courses are supportive education and cannot replace medical care. Free 24×7 confidential support:
           </T>
-          <Pressable onPress={() => call("14416")} style={{ marginTop: 4 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Call Tele-MANAS, 14416, toll-free" hitSlop={12} onPress={() => call("14416")} style={{ marginTop: 4 }}>
             <T v="small" style={{ color: t.ink, fontWeight: "600" }}>
               Call Tele-MANAS: 14416 (Toll-free)
             </T>

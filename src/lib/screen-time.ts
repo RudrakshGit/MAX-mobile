@@ -36,7 +36,9 @@ export function sleepStart(spans: Span[], from: number, to: number): number | nu
     }
     cursor = Math.max(cursor, b);
   }
-  return best >= 3 * H ? at : null;
+  // A gap that starts at the very beginning of the window means no phone use was seen that evening at all
+  // (phone off, or not used): the sleep time is unknown, not "8 pm".
+  return best >= 3 * H && at !== from ? at : null;
 }
 
 /** Yesterday midnight → now; the night is yesterday 8 pm → today noon (or now, if earlier). */

@@ -18,6 +18,13 @@ step "crisis golden set never shrinks (>= 91 cases)"
 n=$(node -e 'console.log(require("./src/safety/golden.json").length)')
 [ "$n" -ge 91 ] || bad "golden set has $n cases"
 
+step "crisis holdout set (fresh phrasings + everyday controls, added after the Oct 2026 audit) never shrinks (>= 79 cases)"
+h=$(node -e 'console.log(require("./src/safety/holdout.json").length)')
+[ "$h" -ge 79 ] || bad "holdout set has $h cases"
+
+step "no native Alert dialogs (use showAlert from src/lib/dialog.tsx so dialogs match both themes)"
+grep -rn "Alert\.alert(" src && bad "Alert.alert found (above)"
+
 step "no secrets in source or config"
 grep -rIlE "gsk_[A-Za-z0-9]{10,}|GROQ_API_KEY *=|postgres(ql)?://[^ \"']+:[^ \"']+@" src app.json eas.json 2>/dev/null && bad "secret-looking string found (above)"
 

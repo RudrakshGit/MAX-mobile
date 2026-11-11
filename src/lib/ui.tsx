@@ -3,6 +3,7 @@ import React, { type ReactNode } from "react";
 import {
   Image,
   Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -53,10 +54,11 @@ export function T({
 
   return (
     <Text
-      numberOfLines={fit ? 1 : numberOfLines}
-      adjustsFontSizeToFit={fit}
-      minimumFontScale={fit ? 0.7 : undefined}
-      style={[styles[v], { color, fontFamily }, style]}>
+      // the web can't shrink text to fit, so there a long title wraps instead of being cut off
+      numberOfLines={fit ? (Platform.OS === "web" ? 2 : 1) : numberOfLines}
+      adjustsFontSizeToFit={fit && Platform.OS !== "web"}
+      minimumFontScale={fit && Platform.OS !== "web" ? 0.7 : undefined}
+      style={[styles[v], { color, fontFamily }, style, fit && Platform.OS === "web" ? { fontSize: 22, lineHeight: 28 } : null]}>
       {children}
     </Text>
   );
@@ -67,7 +69,8 @@ export function PaperGrain() {
   const t = useTheme();
   const { width, height } = useWindowDimensions();
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    // clipped to its screen: on the web a grain taller than the screen made the page scroll (Talk's header slid away)
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: "hidden" }]}>
       <Image
         source={require("../../assets/paper-grain-tall.png")}
         // Explicit size: on Android a fill-sized Image with resizeMode="repeat" drew one small patch (audit F18),
@@ -87,12 +90,15 @@ export function Screen({
   right,
   children,
   scroll = true,
+  onScrollSettled,
 }: {
   title?: string;
   left?: ReactNode;
   right?: ReactNode;
   children: ReactNode;
   scroll?: boolean;
+  /** called once the page stops scrolling (drag released, fling finished) */
+  onScrollSettled?: () => void;
 }) {
   const t = useTheme();
   // On tabs the screen draws its own big title and Help pill. On pushed screens the native header already
@@ -117,13 +123,17 @@ export function Screen({
   ) : null;
 
   return (
-    <SafeAreaView edges={pushed ? [] : ["top"]} style={{ flex: 1, backgroundColor: t.paper }}>
+    // no background here: the navigator already paints paper under every screen (overdraw, M16 follow-up)
+    <SafeAreaView edges={pushed ? [] : ["top"]} style={{ flex: 1 }}>
       <PaperGrain />
       {scroll ? (
         <KeyboardAwareScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.page}
           keyboardShouldPersistTaps="handled"
+          // a fling's end is the settle; a drag released without a fling settles too (the scope waits a moment)
+          onScrollEndDrag={onScrollSettled}
+          onMomentumScrollEnd={onScrollSettled}
           bottomOffset={24}>
           {header}
           {children}
@@ -143,7 +153,7 @@ export function Page({ children }: { children: ReactNode }) {
   const t = useTheme();
   const { bottom } = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: t.paper }}>
+    <View style={{ flex: 1 }}>
       <PaperGrain />
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
@@ -218,10 +228,13 @@ export function Choice<V extends string | number>({
   fill?: boolean;
   nowrap?: boolean;
 }) {
+  // with large text a filled row would break words inside the chips ("badl/y"), so the chips wrap instead
+  const { fontScale } = useWindowDimensions();
+  const even = fill && fontScale <= 1.3;
   return (
-    <View style={[styles.choices, fill && { flexWrap: "nowrap", gap: 6 }, nowrap && { flexWrap: "nowrap" }]}>
+    <View style={[styles.choices, even && { flexWrap: "nowrap", gap: 6 }, nowrap && { flexWrap: "nowrap" }]}>
       {options.map((o) => (
-        <View key={String(o.value)} style={fill ? { flex: 1 } : undefined}>
+        <View key={String(o.value)} style={even ? { flex: 1 } : undefined}>
           <SketchChip
             id={`choice-${o.value}`}
             label={o.label}
@@ -284,7 +297,17 @@ export function Field(props: TextInputProps & { label?: string; error?: string }
   return <SketchField {...props} />;
 }
 
-export const call = (n: string) => Linking.openURL(`tel:${n.replace(/[^0-9+]/g, "")}`);
+/** Opens the dialer. On a tablet or a phone without one, the number is shown instead, so the button never does nothing. */
+export const call = async (n: string) => {
+  const digits = n.replace(/[^0-9+]/g, "");
+  try {
+    await Linking.openURL(`tel:${digits}`);
+  } catch {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { showAlert } = require("./dialog") as typeof import("./dialog");
+    showAlert("Call this number", `This phone can't start the call. Dial ${n} from another phone.`);
+  }
+};
 
 export const openWebUrl = async (url: string) => {
   try {

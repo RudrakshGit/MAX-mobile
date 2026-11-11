@@ -1,16 +1,18 @@
 import { showAlert } from "@/lib/dialog";
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation, type Href } from "expo-router";
+import { journalBridge, type Action } from "@/lib/personal";
 import { useAudioRecorder, useAudioRecorderState } from "expo-audio";
 import { FEELINGS, INFLUENCES } from "@/content/feelings";
 import { suggestTags, transcribeAudioFile } from "@/lib/api";
 import { moodWords } from "@/lib/insights";
-import { logActivity, newId, update, useStore, type Entry } from "@/lib/store";
+import { getState, logActivity, newId, update, useStore, type Entry } from "@/lib/store";
 import { space, useTheme } from "@/lib/theme";
 import { Button, CrisisCard, Field, Page, Section, T } from "@/lib/ui";
 import { classifyRisk } from "@/safety/classifier";
 import { Chip } from "@/ui/sketch/Chip";
+import { isWeb } from "@/lib/platform";
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
 import {
   ensureMicPermission,
@@ -25,6 +27,9 @@ import { Player } from "@/features/voice/Player";
 import { Waveform } from "@/features/voice/Waveform";
 import { processPendingTranscripts } from "@/features/voice/queue";
 import { Max } from "@/components/max";
+
+// "Exam brain dump": three small questions that turn a pile of worry into one next step.
+const BRAIN_DUMP = "What am I most worried about right now?\n\n\nWhich part of it is in my control, and which isn't?\n\n\nWhat is one small step I can take in the next 15 minutes?\n";
 
 const PROMPTS = [
   "What's taking up the most space in my head?",
@@ -41,19 +46,23 @@ const MOOD_OPTIONS = moodWords.map((w, i) => ({
 
 export default function JournalNew() {
   const t = useTheme();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, template } = useLocalSearchParams<{ id?: string; template?: string }>();
   const entries = useStore((s) => s.entries);
   const consents = useStore((s) => s.consents);
 
   const existing = id ? entries.find((e) => e.id === id) : undefined;
   const entryIdRef = useRef<string>(existing?.id ?? newId());
+  // Voice files made on this screen. Nothing is deleted until Save, so backing out never loses the saved note.
+  const sessionFiles = useRef<string[]>([]);
+  const savedRef = useRef(false);
 
   const [step, setStep] = useState(1);
   const [mood, setMood] = useState<number>(existing?.mood ?? 3);
   const [feelings, setFeelings] = useState<string[]>(existing?.feelings ?? []);
   const [influences, setInfluences] = useState<string[]>(existing?.influences ?? []);
-  const [text, setText] = useState(existing?.text ?? "");
-  const [prompt, setPrompt] = useState<string | undefined>(existing?.prompt);
+  const [text, setText] = useState(existing?.text ?? (template === "braindump" ? BRAIN_DUMP : ""));
+  const [prompt, setPrompt] = useState<string | undefined>(existing?.prompt ?? (template === "braindump" ? "Exam brain dump" : undefined));
+  const [bridge, setBridge] = useState<Action | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
 
@@ -90,6 +99,36 @@ export default function JournalNew() {
       }
     }
   }, [recorderState.durationMillis, isRecording]);
+
+  // Back (the phone's button or the header) steps back through the wizard; on the first step, unsaved words or a
+  // recording get a "leave without saving?" first. Files recorded here are cleaned up if the entry isn't saved.
+  const navigation = useNavigation();
+  const startText = existing?.text ?? (template === "braindump" ? BRAIN_DUMP : "");
+  const dirty = text.trim() !== startText.trim() || audioClip?.uri !== existing?.audio?.uri;
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", (e) => {
+        if (savedRef.current) return;
+        if (step > 1 && !bridge && !showSupport) {
+          e.preventDefault();
+          setStep(step - 1);
+          return;
+        }
+        if (!dirty) return;
+        e.preventDefault();
+        showAlert("Leave without saving?", "What you wrote or recorded here will be lost.", [
+          { text: "Keep writing", style: "cancel" },
+          { text: "Leave", style: "destructive", onPress: () => navigation.dispatch(e.data.action) },
+        ]);
+      }),
+    [navigation, step, dirty, bridge, showSupport],
+  );
+  useEffect(
+    () => () => {
+      if (!savedRef.current) for (const uri of sessionFiles.current) void deleteAudioFile(uri);
+    },
+    [],
+  );
 
   const toggleFeeling = (fid: string) => {
     if (feelings.includes(fid)) {
@@ -139,8 +178,10 @@ export default function JournalNew() {
         return;
       }
 
-      const saved = await saveAudioToPermanentStorage(tempUri, entryIdRef.current, liveLevels, ms);
+      // a new file name per recording, so re-recording never overwrites the note already saved with the entry
+      const saved = await saveAudioToPermanentStorage(tempUri, `${entryIdRef.current}-${Date.now().toString(36)}`, liveLevels, ms);
       if (saved) {
+        sessionFiles.current.push(saved.uri);
         setAudioClip(saved);
         setAudioNotice("");
         if (consents.voice) {
@@ -155,9 +196,7 @@ export default function JournalNew() {
   };
 
   const discardAudio = async () => {
-    if (audioClip?.uri) {
-      await deleteAudioFile(audioClip.uri);
-    }
+    // the file itself goes on Save (or when leaving without saving, if it was made here)
     setAudioClip(undefined);
     setTranscriptState(undefined);
     setLiveLevels([]);
@@ -197,7 +236,7 @@ export default function JournalNew() {
 
     showAlert(
       "Voice Transcription",
-      "Audio is sent to our server and Groq for transcription. It is not stored there, and Groq does not train on it.",
+      "Your recording is sent through our server to Groq, the AI service, to turn it into text. Our server does not keep it. You can turn this off in Settings.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -214,6 +253,12 @@ export default function JournalNew() {
   };
 
   const doSave = (finalFeelings = feelings, finalInfluences = influences) => {
+    // one save, however fast the button is tapped
+    if (savedRef.current) return;
+    savedRef.current = true;
+    const keep = audioClip?.uri;
+    for (const uri of [...sessionFiles.current, existing?.audio?.uri]) if (uri && uri !== keep) void deleteAudioFile(uri);
+    sessionFiles.current = [];
     const now = Date.now();
     const entryId = existing?.id ?? entryIdRef.current;
     const entryData: Entry = {
@@ -247,6 +292,12 @@ export default function JournalNew() {
     // The entry is saved either way. If the words suggest danger, help comes before the screen closes.
     if (classifyRisk(entryData.text ?? "").level === "crisis") {
       setShowSupport(true);
+      return;
+    }
+    // A gentle next step when the feelings picked suggest one (anxious → grounding, lonely → talk…).
+    const next = journalBridge(entryData, getState());
+    if (next && !existing) {
+      setBridge(next);
       return;
     }
     router.back();
@@ -294,6 +345,29 @@ export default function JournalNew() {
   };
 
   const canSave = text.trim().length > 0 || !!audioClip;
+
+  if (bridge) {
+    return (
+      <Page>
+        <View style={{ gap: space.lg, paddingBottom: space.xl }}>
+          <View style={{ alignItems: "center" }}>
+            <Max state="care" size={88} />
+          </View>
+          <T v="heading">Saved. Thank you for writing it down.</T>
+          <T soft>{bridge.reason}</T>
+          <Button
+            kind="accent"
+            label={bridge.title}
+            onPress={() => {
+              router.back();
+              router.push(bridge.href as Href);
+            }}
+          />
+          <Button kind="quiet" label="Not now" onPress={() => router.back()} />
+        </View>
+      </Page>
+    );
+  }
 
   if (showSupport) {
     return (
@@ -381,6 +455,7 @@ export default function JournalNew() {
                     key={f.id}
                     label={f.label}
                     selected={feelings.includes(f.id)}
+                    role="checkbox"
                     onPress={() => toggleFeeling(f.id)}
                   />
                 ))}
@@ -394,6 +469,7 @@ export default function JournalNew() {
                     key={f.id}
                     label={f.label}
                     selected={feelings.includes(f.id)}
+                    role="checkbox"
                     onPress={() => toggleFeeling(f.id)}
                   />
                 ))}
@@ -407,6 +483,7 @@ export default function JournalNew() {
                     key={f.id}
                     label={f.label}
                     selected={feelings.includes(f.id)}
+                    role="checkbox"
                     onPress={() => toggleFeeling(f.id)}
                   />
                 ))}
@@ -420,6 +497,7 @@ export default function JournalNew() {
                     key={f.id}
                     label={f.label}
                     selected={feelings.includes(f.id)}
+                    role="checkbox"
                     onPress={() => toggleFeeling(f.id)}
                   />
                 ))}
@@ -428,6 +506,7 @@ export default function JournalNew() {
 
             <View style={{ marginTop: space.sm }}>
               <Button label="Next" onPress={() => setStep(3)} />
+              <Button kind="quiet" label="Back" onPress={() => setStep(1)} />
             </View>
           </View>
         )}
@@ -446,6 +525,7 @@ export default function JournalNew() {
                   key={inf.id}
                   label={inf.label}
                   selected={influences.includes(inf.id)}
+                  role="checkbox"
                   onPress={() => toggleInfluence(inf.id)}
                 />
               ))}
@@ -453,6 +533,7 @@ export default function JournalNew() {
 
             <View style={{ marginTop: space.md }}>
               <Button label="Next" onPress={() => setStep(4)} />
+              <Button kind="quiet" label="Back" onPress={() => setStep(2)} />
             </View>
           </View>
         )}
@@ -462,7 +543,8 @@ export default function JournalNew() {
           <View style={{ gap: space.md }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <T v="title">Write or speak</T>
-              {!audioClip && !isRecording ? (
+              {/* voice notes need the app (microphone and files on the phone) */}
+              {!isWeb && !audioClip && !isRecording ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Record voice note"
@@ -535,6 +617,7 @@ export default function JournalNew() {
                     accessibilityRole="button"
                     accessibilityLabel="Discard audio recording"
                     onPress={discardAudio}
+                    hitSlop={12}
                     style={{ padding: 4 }}>
                     <DoodleIcon name="trash" size={16} color={t.ink2} />
                   </Pressable>
@@ -563,6 +646,8 @@ export default function JournalNew() {
                   </View>
                 ) : (
                   <Pressable
+                    accessibilityRole="button"
+                    hitSlop={12}
                     onPress={() => promptVoiceConsentAndTranscribe(audioClip.uri)}
                     style={{ marginTop: 4, alignSelf: "flex-start" }}>
                     <T v="small" style={{ fontWeight: "600", textDecorationLine: "underline" }}>
@@ -587,6 +672,15 @@ export default function JournalNew() {
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ gap: space.sm, paddingRight: space.md }}
                 style={{ marginHorizontal: -space.md, paddingHorizontal: space.md }}>
+                <Chip
+                  label="Exam brain dump"
+                  selected={prompt === "Exam brain dump"}
+                  onPress={() => {
+                    if (prompt === "Exam brain dump") return setPrompt(undefined);
+                    setPrompt("Exam brain dump");
+                    if (!text.trim()) setText(BRAIN_DUMP);
+                  }}
+                />
                 {PROMPTS.map((p) => (
                   <Chip
                     key={p}
@@ -600,6 +694,7 @@ export default function JournalNew() {
 
             <Field
               value={text}
+              maxLength={5000}
               onChangeText={setText}
               multiline
               placeholder={prompt ?? "What is happening right now? How does it feel in your body?"}
@@ -619,6 +714,7 @@ export default function JournalNew() {
                 disabled={!canSave}
               />
             )}
+            {!loadingAi && !isRecording ? <Button kind="quiet" label="Back" onPress={() => setStep(3)} /> : null}
           </View>
         )}
 
@@ -637,6 +733,7 @@ export default function JournalNew() {
                     key={f.id}
                     label={f.label}
                     selected={feelings.includes(f.id)}
+                    role="checkbox"
                     onPress={() => toggleFeeling(f.id)}
                   />
                 ))}
@@ -650,6 +747,7 @@ export default function JournalNew() {
                     key={inf.id}
                     label={inf.label}
                     selected={influences.includes(inf.id)}
+                  role="checkbox"
                     onPress={() => toggleInfluence(inf.id)}
                   />
                 ))}
@@ -658,6 +756,7 @@ export default function JournalNew() {
 
             <View style={{ marginTop: space.sm }}>
               <Button label="Save entry" onPress={() => doSave()} />
+              <Button kind="quiet" label="Back" onPress={() => setStep(4)} />
             </View>
           </View>
         )}

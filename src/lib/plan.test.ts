@@ -18,15 +18,30 @@ test("goals tick from today's data only", () => {
   const s = {
     checkins: [{ date: "2026-10-20", mood: 2, sleep: 2, screen: 60, stress: 4 }],
     activity: [
-      { date: "2026-10-19", kind: "learn" },
-      { date: "2026-10-20", kind: "do" },
+      { date: "2026-10-19", kind: "learn", ref: "sleep-reset:1" },
+      // the suggested step today is the phone-and-sleep read
+      { date: "2026-10-20", kind: "learn", ref: "phone-sleep" },
     ],
   } as unknown as State;
 
   const p = dailyPlan(s, "2026-10-20");
   assert.equal(p[0].done, true);
   assert.equal(p[1].done, true);
-  assert.equal(p[2].done, false); // yesterday's lesson doesn't count
+  assert.equal(p[2].done, false); // yesterday's lesson doesn't count, and the quick read isn't the course lesson
+});
+
+test("the do goal ticks only for the step actually done", () => {
+  const s = {
+    checkins: [{ date: "2026-10-20", mood: 2, sleep: 2, screen: 60, stress: 4 }],
+    activity: [{ date: "2026-10-20", kind: "do", ref: "breathe" }],
+  } as unknown as State;
+  // the step is the phone-and-sleep read; a breathing session doesn't tick it
+  assert.equal(dailyPlan(s, "2026-10-20")[1].done, false);
+  const talk = {
+    checkins: [{ date: "2026-10-20", mood: 1, sleep: 3, screen: 15, stress: 2 }],
+    activity: [{ date: "2026-10-20", kind: "do", ref: "talk" }],
+  } as unknown as State;
+  assert.equal(dailyPlan(talk, "2026-10-20")[1].done, true);
 });
 
 test("do goal uses nextStep suggestion when available", () => {

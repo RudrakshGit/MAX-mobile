@@ -7,7 +7,7 @@ export const loneliness3: Instrument = {
   category: "wellness",
   minutes: 1,
   clinical: false,
-  intro: "How often do you feel the following in your daily college life?",
+  intro: "The next questions are about how you feel about different aspects of your life. For each one, choose how often you feel that way.",
   whatYouGet: [
     "A 3–9 score reflecting social connection",
     "Insights into feeling left out or isolated",
@@ -27,6 +27,6 @@ export const loneliness3: Instrument = {
   // Hughes et al. (2004) publish the 3–9 score, not clinical bands. Higher means lonelier; no cut-offs are claimed.
   bands: [],
   source: "Hughes, Waite, Hawkley & Cacioppo (2004), Res Aging 26(6):655–672.",
-  licence: "Free for non-profit research and education (UCLA Peplau lab).",
+  licence: "Published in an open author manuscript (PMC2394670); no separate licence is stated.",
   scienceUrl: "https://pubmed.ncbi.nlm.nih.gov/18504506/",
 };

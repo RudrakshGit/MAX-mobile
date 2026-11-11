@@ -205,7 +205,7 @@ export const CARDS: Card[] = [
     id: "skl-03",
     type: "skill",
     text: "When self-criticism gets harsh, ask: would you speak these exact words to your closest friend?",
-    action: { label: "Reframe a thought", href: "/tool/spiral" },
+    action: { label: "Reframe a thought", href: "/tool/reframe" },
   },
   {
     id: "skl-04",

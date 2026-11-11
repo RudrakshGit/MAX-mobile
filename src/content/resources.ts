@@ -462,7 +462,7 @@ export const resources: Resource[] = [
     language: "hi",
     minutes: 6,
     reviewedOn: "2026-10-12",
-    status: "ok",
+    status: "hidden", // description links to a paid course (checked 27 Oct 2026)
   },
   {
     id: "nhs-insomnia-web",
@@ -884,6 +884,27 @@ export const resources: Resource[] = [
     reviewedOn: "2026-10-12",
     status: "ok",
   },
+
+  // --- Hindi / Hinglish (added 27 Oct 2026; each checked via YouTube oEmbed; spoken language checked on the caption track) ---
+  { id: "hi-ddnews-stress", topic: "stress", kind: "video", title: "It's Okay Not to Be Okay: चिड़चिड़ापन, थकान और बेचैनी", creator: "DD News Total Health, Dr Rajesh Sagar (AIIMS New Delhi)", credential: "official", url: "https://www.youtube.com/watch?v=tpvOr44I1bw", language: "hinglish", minutes: 28, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-manntalks-stress", topic: "stress", kind: "video", title: "माइन्डफुलनेस से तनाव का प्रबंधन", creator: "Mann Talks", credential: "ngo", url: "https://www.youtube.com/watch?v=QALLoFJV7Hc", language: "hi", minutes: 7, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-telemanas-exam", topic: "exam", kind: "video", title: "शैक्षिक तनाव और टेली मानस", creator: "Tele MANAS (MoHFW, NIMHANS)", credential: "official", url: "https://www.youtube.com/watch?v=ofPUicYa-QI", language: "hi", minutes: 3, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-procrastination", topic: "procrastination", kind: "video", title: "Overthinking and Procrastination (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=VoS9PqJxkl8", language: "hinglish", minutes: 27, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-comparison", topic: "comparison", kind: "video", title: "Dealing with Academic Comparison and Competition (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=6uWo5Z5F1gE", language: "hinglish", minutes: 26, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-whiteswan-worry", topic: "worry", kind: "video", title: "मुझे इतने निगेटिव विचार क्यों आते हैं?", creator: "White Swan Foundation", credential: "ngo", url: "https://www.youtube.com/watch?v=kjZTr2uIxo8", language: "hi", minutes: 5, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-manntalks-worry", topic: "worry", kind: "video", title: "ओवरथिंकिंग के चक्र को तोड़ें", creator: "Mann Talks", credential: "ngo", url: "https://www.youtube.com/watch?v=QC2IPF-txyY", language: "hi", minutes: 18, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-nimhans-worry", topic: "worry", kind: "video", title: "चिंता विकार (ManoSandesh)", creator: "NIMHANS, Dr M. Thomas Kishore", credential: "official", url: "https://www.youtube.com/watch?v=65-kEJUZX0A", language: "hi", minutes: 5, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-whiteswan-sleep", topic: "sleep", kind: "video", title: "नींद और मानसिक स्वास्थ्य का क्या सम्बन्ध है?", creator: "White Swan Foundation", credential: "ngo", url: "https://www.youtube.com/watch?v=p333zX4JQpI", language: "hi", minutes: 4, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-loneliness", topic: "loneliness", kind: "video", title: "Overcoming Loneliness: Role of Family and Peers (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=ZvRMcIsZYMY", language: "hinglish", minutes: 32, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-telemanas-loneliness", topic: "loneliness", kind: "video", title: "उदास या बेचैन? टेली मानस 14416 पर बात करें", creator: "Tele MANAS (MoHFW, NIMHANS)", credential: "official", url: "https://www.youtube.com/watch?v=OuiSGBzXrnE", language: "hi", minutes: 2, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-self-criticism", topic: "self-criticism", kind: "video", title: "Self-Care and Self-Love for Mental Wellness (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=QmbG-o5-GL0", language: "hinglish", minutes: 25, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-manntalks-anger", topic: "anger", kind: "video", title: "रिएक्ट करने के बजाय सोचकर जवाब देना", creator: "Mann Talks", credential: "ngo", url: "https://www.youtube.com/watch?v=-FgYaCkhRkA", language: "hi", minutes: 18, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-manntalks-breakups", topic: "breakups", kind: "video", title: "बीती बातों को दिमाग में दोहराना कैसे बंद करें?", creator: "Mann Talks", credential: "ngo", url: "https://www.youtube.com/watch?v=ij-RCZAmzDY", language: "hi", minutes: 12, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-phone", topic: "phone", kind: "video", title: "Break Your Addiction with Mobile Phone (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=L2DAXMi76cw", language: "hinglish", minutes: 29, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-ncert-grief", topic: "grief", kind: "video", title: "Managing Grief (Sahyog)", creator: "NCERT Manodarpan", credential: "official", url: "https://www.youtube.com/watch?v=F2TPuR268FQ", language: "hinglish", minutes: 29, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-manntalks-panic", topic: "panic", kind: "video", title: "साइक्लिक ब्रीदिंग से मन शांत करें (guided)", creator: "Mann Talks", credential: "ngo", url: "https://www.youtube.com/watch?v=ha2jStmUfEc", language: "hi", minutes: 8, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-aiims-low-mood", topic: "low-mood", kind: "video", title: "डिप्रेशन: एक ऐसी बातचीत, जो हमें ज़रूर करनी चाहिए", creator: "AIIMS New Delhi, Dr Koushik Sinha Deb", credential: "official", url: "https://www.youtube.com/watch?v=PRDj7zWhOcU", language: "hi", minutes: 12, reviewedOn: "2026-10-27", status: "ok" },
+  { id: "hi-nimhans-low-mood", topic: "low-mood", kind: "video", title: "अवसाद (ManoSandesh)", creator: "NIMHANS, Dr Eesha Sharma", credential: "official", url: "https://www.youtube.com/watch?v=i0ZoaW7k5uU", language: "hi", minutes: 6, reviewedOn: "2026-10-27", status: "ok" },
 ];
 
 export const resourcesById = new Map<string, Resource>(resources.map((r) => [r.id, r]));

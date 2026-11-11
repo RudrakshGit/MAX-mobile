@@ -3,9 +3,10 @@
 // NFD + dropping U+0300–036F removes Latin accents ("Lagtā") but leaves
 // Devanagari matras alone: those live in U+0900–097F.
 export const plain = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC").replace(/\*\*|__/g, "").replace(/^#+\s*/gm, "").trim();
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC").replace(/\*\*|__/g, "").replace(/^#+\s*/gm, "").replace(/\s*[([]end[)\]]\s*$/i, "").trim();
 
-const HINGLISH = /\b(hai|hain|nahi|nhi|kya|kyu|kyun|mujhe|mera|meri|mere|yaar|raha|rahi|kuch|bahut|bohot|aaj|kal|lag|lagta|ho|gaya|gayi|karna|kar|tha|thi|sab|koi|bhi|aur|toh|matlab|pata)\b/gi;
+// (only words that aren't also common English words: no "main", "to", "me", "bus")
+const HINGLISH = /\b(hai|hain|nahi|nhi|kya|kyu|kyun|mujhe|mera|meri|mere|yaar|yrr|raha|rahi|kuch|bahut|bohot|aaj|kal|lag|lagta|laga|lagi|ho|hu|hoon|hun|haan|han|gaya|gayi|karna|kar|karo|tha|thi|sab|koi|bhi|aur|toh|matlab|pata|bas|bura|accha|acha|theek|thik|tum|tu|kaise|kaisa|kaun|abhi|bhai|wala|wale|mila|hua|hui|nahin|kyunki|ab)\b/gi;
 
 /** Which language to answer in, decided from the student's own words. */
 export function replyLanguage(text: string): "hindi" | "hinglish" | "english" {

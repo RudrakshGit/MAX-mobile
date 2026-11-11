@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import React from "react";
 import { View, Text, Animated, Easing } from "react-native";
 import { Redirect, Tabs } from "expo-router";
@@ -10,12 +11,13 @@ import { useReducedMotionSafe } from "@/components/max/useReducedMotionSafe";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// Four tabs (docs/plan/M16, owner's answer 1): Today, Explore (tools, courses, reading, sounds, self-checks), Talk and
+// Journal. Profile and Settings open from the avatar on Today; Help sits in the same place on every screen.
 const tabs: { name: string; title: string; icon: DoodleIconName }[] = [
-  { name: "index", title: "Home", icon: "home" },
-  { name: "learn", title: "Learn", icon: "book" },
-  { name: "tools", title: "Tools", icon: "compass" },
+  { name: "index", title: "Today", icon: "home" },
+  { name: "explore", title: "Explore", icon: "compass" },
+  { name: "talk", title: "Talk", icon: "chat" },
   { name: "journal", title: "Journal", icon: "pen" },
-  { name: "tests", title: "Tests", icon: "checklist" },
 ];
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -99,6 +101,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // tabs out of view don't re-render on every store change or theme switch (M16 speed)
+        freezeOnBlur: true,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: t.ink,
         tabBarInactiveTintColor: t.ink2,
@@ -110,7 +114,9 @@ export default function TabsLayout() {
           paddingBottom: bottomInset,
           paddingTop: 6,
         },
-        sceneStyle: { backgroundColor: t.paper },
+        // the stack screen under the tabs already paints paper; a second coat here is pure overdraw
+        // (on the web inactive tabs stay in the page, so each scene keeps its own paper there)
+        sceneStyle: { backgroundColor: Platform.OS === "web" ? t.paper : "transparent" },
       }}>
       {tabs.map((x) => {
         const seed = seedFrom(`tab-${x.name}`);
@@ -146,7 +152,10 @@ export default function TabsLayout() {
           />
         );
       })}
-      <Tabs.Screen name="talk" options={{ href: null }} />
+      {/* old tabs, kept only so old links still resolve */}
+      <Tabs.Screen name="learn" options={{ href: null }} />
+      <Tabs.Screen name="tools" options={{ href: null }} />
+      <Tabs.Screen name="tests" options={{ href: null }} />
     </Tabs>
   );
 }

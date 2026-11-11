@@ -2,12 +2,23 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { loadState, saveState, wipeStorage } from "./persist";
 
-// Everything the student writes lives on the phone. Nothing here is sent
-// anywhere except chat text (to the reply API) and, only if they opt in,
-// the three campus pulse numbers.
+// Everything the student writes lives on the phone. It leaves only as chat text (to the reply API), journal text
+// or voice for AI help when those are switched on, the Google backup when signed in (src/lib/cloud.ts), and,
+// only if they join their college, the day's check-in numbers (src/lib/api.ts sendPulse).
 
-export type CheckIn = { date: string; mood: number; sleep: number; screen: number; stress: number; screenMin?: number };
-export type Msg = { id: string; role: "user" | "assistant"; text: string; at: number; kind?: "crisis" | "distress" | "offline"; suggest?: { label: string; href: string }[]; emotions?: string[] };
+export type CheckIn = {
+  date: string;
+  mood: number;
+  sleep: number;
+  screen: number;
+  stress: number;
+  screenMin?: number;
+  /** optional "one small thing that went okay today" */
+  win?: string;
+  /** when the check-in was saved (ms); used to learn the student's usual check-in time */
+  at?: number;
+};
+export type Msg = { id: string; role: "user" | "assistant"; text: string; at: number; kind?: "crisis" | "distress" | "care" | "offline"; suggest?: { label: string; href: string }[]; emotions?: string[] };
 export type Chat = { id: string; title: string; createdAt: number; updatedAt: number; messages: Msg[] };
 export type Entry = {
   id: string;
@@ -23,7 +34,34 @@ export type Entry = {
   reflection?: string;
 };
 export type Insight = { date: string; title: string; sections: { tag: string; heading: string; body: string }[] };
-export type SafetyPlan = { warningSigns: string; coping: string; people: string; places: string; professionals: string; reasons: string };
+export type MusicApp = "spotify" | "ytmusic" | "jiosaavn";
+export type MusicNeed = "calm" | "anxiety" | "focus" | "sleep" | "noise" | "uplift";
+export type MyTrack = {
+  id: string;
+  kind: "link" | "file";
+  title: string;
+  /** link: an https address that opens in the music app or browser */
+  url?: string;
+  /** file: a copy inside MAX's own storage (documentDirectory/music/) */
+  uri?: string;
+  /** detected from the link */
+  platform?: "spotify" | "ytmusic" | "youtube" | "jiosaavn" | "apple" | "other";
+  need?: MusicNeed;
+  addedAt: number;
+};
+/** One finished day of phone use. `v: 2` marks days measured with the corrected method (Nov 2026). */
+export type PhoneDay = { date: string; minutes: Record<string, number>; screenOn?: number; pickups?: number; v?: number };
+export type SafetyPlan = {
+  warningSigns: string;
+  coping: string;
+  people: string;
+  places: string;
+  professionals: string;
+  reasons: string;
+  /** One person the student can call right now; shown as a call button on the Help screen. */
+  callName?: string;
+  callPhone?: string;
+};
 export type Consents = { ai: boolean; voice: boolean; sync: boolean; at?: number };
 export type Reframe = { id: string; at: number; situation: string; thought: string; trap: string; balanced: string };
 export type Result = {
@@ -39,6 +77,33 @@ export type Result = {
   incomplete?: boolean;
 };
 export type Plan = { id: string; at: number; trigger: string; usual: string; instead: string };
+
+/** "Did that help?" after a tool, sound or lesson; drives what MAX suggests next time. */
+export type Helped = { id: string; tool: string; at: number; helped: boolean; mood?: number };
+export type Exam = { id: string; name: string; date: string };
+/** Sync bookkeeping for this phone (never uploaded). The session token itself lives in SecureStore. */
+export type SyncInfo = { email?: string; name?: string; rev: number; lastHash?: string; lastAt?: number; error?: string };
+export type ReminderPrefs = {
+  /** check-in reminder: "fixed" at remindAt; "smart" moves it up to an hour toward the usual check-in time */
+  mode: "smart" | "fixed" | "off";
+  /** the evening before an exam in `exams`, a brain-dump note instead of the usual one */
+  exams: boolean;
+  /** the offer after the first check-in was answered (yes or no), so it isn't shown again */
+  asked?: boolean;
+};
+
+export type CollegeLink = {
+  id: string;
+  name: string;
+  city: string;
+  /** 1–5, or 6 for postgraduate; only if the student chose to share it */
+  year?: number;
+  counsellor?: { name: string; phone: string; hours?: string };
+  exams: { name: string; date: string }[];
+  joinedAt: number;
+  /** the college stopped taking check-ins (left MAX or was removed) */
+  gone?: boolean;
+};
 
 export type Activity = { date: string; kind: "learn" | "do" | "log" | "journal"; ref?: string };
 
@@ -66,12 +131,30 @@ export type State = {
   safetyPlan?: SafetyPlan;
   consents: Consents;
   musicRecent: { id: string; at: number }[];
+  /** The student's own music: links to playlists/songs, or audio files copied into MAX from the phone. */
+  myMusic: MyTrack[];
+  /** Music apps the student uses; editorial playlists for other apps are hidden. Empty = show all. */
+  musicApps: MusicApp[];
   simpleFont: boolean;
   themePreference?: "system" | "light" | "dark";
+  /** How much MAX moves: normal; calm (settles still after a few seconds, no idle gestures); still (no motion). */
+  maxMotion?: "normal" | "calm" | "still";
   results: Result[];
   reframes: Reframe[];
   plans: Plan[];
-  phoneDays: { date: string; minutes: Record<string, number> }[];
+  phoneDays: PhoneDay[];
+  /** ids deleted on this phone, so a sync never brings them back (keep 1000) */
+  tombstones: { id: string; at: number }[];
+  sync?: SyncInfo;
+  helped: Helped[];
+  exams: Exam[];
+  reminders: ReminderPrefs;
+  /** last time the app was opened (ms) */
+  lastOpenAt?: number;
+  /** a campus counsellor or mentor, shown on the Help screen */
+  counsellor?: { name: string; phone: string };
+  /** the college this phone shares anonymous check-ins with (docs/plan/M15); its presence is the consent */
+  college?: CollegeLink;
 };
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -92,12 +175,18 @@ export const initialState = (): State => ({
   values: [],
   consents: { ai: false, voice: false, sync: false },
   musicRecent: [],
+  myMusic: [],
+  musicApps: [],
   simpleFont: false,
   themePreference: "light",
   results: [],
   reframes: [],
   plans: [],
   phoneDays: [],
+  tombstones: [],
+  helped: [],
+  exams: [],
+  reminders: { mode: "off", exams: true },
 });
 
 let state = initialState();
@@ -112,6 +201,12 @@ export function activeChat(s: State): Chat | undefined {
 }
 
 export function startChat(): string {
+  // an empty conversation is reused, so tapping "New" again never piles up blank chats (or pushes a real one out)
+  const blank = getState().chats.find((c) => c.messages.length === 0);
+  if (blank) {
+    update(() => ({ activeChatId: blank.id }));
+    return blank.id;
+  }
   const id = newId();
   const now = Date.now();
   const chat: Chat = { id, title: "New conversation", createdAt: now, updatedAt: now, messages: [] };
@@ -139,12 +234,20 @@ export function addMessage(chatId: string, m: Omit<Msg, "id" | "at">) {
   }));
 }
 
+/** Records deleted ids so a sync from another phone never brings them back. */
+export const tombstone = (s: State, ...ids: string[]) =>
+  [...ids.map((id) => ({ id, at: Date.now() })), ...s.tombstones.filter((t) => !ids.includes(t.id))].slice(0, 1000);
+
 export function deleteChat(id: string) {
   update((s) => {
     const remaining = s.chats.filter((c) => c.id !== id);
     const activeChatId = s.activeChatId === id ? remaining[0]?.id : s.activeChatId;
-    return { chats: remaining, activeChatId };
+    return { chats: remaining, activeChatId, tombstones: tombstone(s, id) };
   });
+}
+
+export function deleteEntry(id: string) {
+  update((s) => ({ entries: s.entries.filter((e) => e.id !== id), tombstones: tombstone(s, id) }));
 }
 
 export function renameChat(id: string, title: string) {
@@ -160,16 +263,27 @@ export async function hydrate() {
   listeners.forEach((l) => l());
 }
 
-export function update(fn: (s: State) => Partial<State>) {
-  state = { ...state, ...fn(state) };
+// Non-React observers (the backup engine) get the state before and after each change.
+const changeListeners = new Set<(prev: State, next: State) => void>();
+export function onStateChange(cb: (prev: State, next: State) => void) {
+  changeListeners.add(cb);
+  return () => changeListeners.delete(cb);
+}
+
+function commit(next: State) {
+  const prev = state;
+  state = next;
   listeners.forEach((l) => l());
   saveState(state);
+  changeListeners.forEach((l) => l(prev, next));
+}
+
+export function update(fn: (s: State) => Partial<State>) {
+  commit({ ...state, ...fn(state) });
 }
 
 export function replaceState(newState: State) {
-  state = newState;
-  listeners.forEach((l) => l());
-  saveState(state);
+  commit(newState);
 }
 
 /** Wipes every trace on this phone and returns to a first-run state. */

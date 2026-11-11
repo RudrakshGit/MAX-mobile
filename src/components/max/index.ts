@@ -10,7 +10,6 @@ export {
 export { useMaxBehavior, type MaxBehaviorState, type MaxBehaviorControls } from "./useMaxBehavior";
 export { useMaxInactivity } from "./useMaxInactivity";
 export { useReducedMotionSafe } from "./useReducedMotionSafe";
-export { WalkingMaxCorridor, type WalkingMaxCorridorProps } from "./WalkingMaxCorridor";
 export { MaxPeekingIntro } from "./MaxPeekingIntro";
 export { MaxLogoIntro, resetLogoSessionForTests } from "./MaxLogoIntro";
 export * from "./parts";

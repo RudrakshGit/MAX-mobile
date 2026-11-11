@@ -10,9 +10,13 @@ Antigravity: start with `HANDOFF.md`. Then the milestone brief in `docs/plan/`. 
 - Journal text and voice go to the AI only when the student has consented (Settings toggles); the daily insight never uses journal text; screen-time per app never goes to the AI.
 - Campus aggregates only, minimum 10 distinct students; the anonymous campus id is never uploaded with a signed-in account.
 - Only the 15 verified instruments in `docs/v2-features.md` §5 ship; their items come verbatim from the source (Claude-maintained `src/content/instruments/`). ISI and PSS-10 are licensed; never add them.
-- Colours live only in `src/lib/theme.ts`; the only non-grey colour is the crisis `help` red. Import fonts and icons by deep path, never the package index.
+- Colours live only in `src/lib/theme.ts`. The crisis `help` red is the only alarm colour; since M16 (owner, 7 Nov 2026) the only other colours are MAX's pink cheeks and the subtle topic tints behind pictures, never for text. Import fonts and icons by deep path, never the package index.
 - Secrets live in `.env.local` (dev) and EAS environment variables (deploy). Only `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` may be public.
-- A missed crisis phrase goes into `src/safety/golden.json` first, then the pattern is fixed.
+- A missed crisis phrase goes into `src/safety/golden.json` (or `holdout.json`, with everyday controls that must NOT trigger) first, then the pattern is fixed.
+- Audio leaves the phone only with the voice-to-text consent; journal feeling tags only with the AI-journal consent (`src/features/voice/queue.ts` checks both).
+- Local data is saved only through `src/lib/persist.ts` (chunked, crash-safe; a failed read never lets a save delete older data). "Delete everything" must also call `wipeLocalFiles()` (voice files, cached backups).
+- Dialogs use `showAlert` from `src/lib/dialog.tsx`, never the native alert (verify enforces it).
+- Instrument bands appear only where a publication states the cut-off; `src/content/instruments/SOURCES.md` records what was checked against which document.
 
 ## Verify
 

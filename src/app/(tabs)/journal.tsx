@@ -1,10 +1,11 @@
+import { THIS_DEVICE } from "@/lib/platform";
 import { showAlert } from "@/lib/dialog";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { FEELINGS, INFLUENCES } from "@/content/feelings";
 import { moodWords } from "@/lib/insights";
-import { update, useStore, type Entry } from "@/lib/store";
+import { tombstone, update, useStore, type Entry } from "@/lib/store";
 import { space, useTheme } from "@/lib/theme";
 import { Button, Screen, T } from "@/lib/ui";
 import { Frame } from "@/ui/sketch/Frame";
@@ -14,6 +15,22 @@ import { processPendingTranscripts } from "@/features/voice/queue";
 import { Max } from "@/components/max";
 import { classifyRisk } from "@/safety/classifier";
 
+// The regex classifier is cheap but not free; a long journal re-renders often, so remember results per text.
+const heavyCache = new Map<string, boolean>();
+function soundsHeavy(e: Entry): boolean {
+  const text = [e.text, e.transcript?.raw, e.transcript?.roman].filter(Boolean).join(" ");
+  if (!text) return false;
+  let v = heavyCache.get(text);
+  if (v === undefined) {
+    v = classifyRisk(text).level === "crisis";
+    if (heavyCache.size > 500) heavyCache.clear();
+    heavyCache.set(text, v);
+  }
+  return v;
+}
+
+const PAGE = 30;
+
 function dateKey(timestamp: number): string {
   const d = new Date(timestamp);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -22,7 +39,11 @@ function dateKey(timestamp: number): string {
 export default function Journal() {
   const t = useTheme();
   const entries = useStore((s) => s.entries);
-  const sorted = [...entries].sort((a, b) => b.at - a.at);
+  const companion = useStore((s) => s.companion) || "Max";
+  const allSorted = [...entries].sort((a, b) => b.at - a.at);
+  // Draw the newest entries first; older ones load on request so a year of journaling stays fast.
+  const [limit, setLimit] = useState(PAGE);
+  const sorted = allSorted.slice(0, limit);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,7 +96,7 @@ export default function Journal() {
           if (target?.audio?.uri) {
             deleteAudioFile(target.audio.uri).catch(() => {});
           }
-          update((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
+          update((s) => ({ entries: s.entries.filter((e) => e.id !== id), tombstones: tombstone(s, id) }));
         },
       },
     ]);
@@ -88,13 +109,15 @@ export default function Journal() {
         label="New entry"
         onPress={() => router.push("/journal-new")}
       />
+      {/* mood history, patterns and phone use moved here from the old Tools tab (M16, owner's answer 1) */}
+      <Button kind="quiet" icon="activity" label="Your mood and patterns" onPress={() => router.push("/profile/mood")} />
 
-      {sorted.length === 0 ? (
+      {allSorted.length === 0 ? (
         <View style={{ marginTop: space.xl, gap: space.sm, alignItems: "center" }}>
           <Max state="empty" size={120} boil interactive onPress={() => router.push("/talk" as Href)} />
           <T v="title">Nothing here yet.</T>
           <T soft style={{ textAlign: "center", paddingHorizontal: space.md }}>
-            Writing down how you feel, even a few messy lines, often brings relief. Your words stay on this phone.
+            {`Writing down how you feel, even a few messy lines, often brings relief. Your words stay on ${THIS_DEVICE}.`}
           </T>
         </View>
       ) : (
@@ -199,7 +222,7 @@ export default function Journal() {
                       )}
 
                       {/* Gentle support line when the words sound heavy (typed or transcribed) */}
-                      {classifyRisk([e.text, e.transcript?.raw, e.transcript?.roman].filter(Boolean).join(" ")).level === "crisis" ? (
+                      {soundsHeavy(e) ? (
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel="Free support, Tele-MANAS 14416"
@@ -211,7 +234,8 @@ export default function Journal() {
                         </Pressable>
                       ) : null}
 
-                      {/* Quick link: Talk about this */}
+                      {/* Quick link: Talk about this (only when there are words to talk about) */}
+                      {previewText ? (
                       <Pressable
                         accessibilityRole="button"
                         onPress={() =>
@@ -225,15 +249,23 @@ export default function Journal() {
                         }
                         style={{ marginTop: 4, alignSelf: "flex-start" }}>
                         <T v="small" soft style={{ textDecorationLine: "underline" }}>
-                          Talk to MAX about this →
+                          {`Talk to ${companion} about this →`}
                         </T>
                       </Pressable>
+                      ) : null}
                     </Frame>
                   </Pressable>
                 );
               })}
             </View>
           ))}
+          {allSorted.length > limit ? (
+            <Button
+              kind="quiet"
+              label={`Show older entries (${allSorted.length - limit} more)`}
+              onPress={() => setLimit((n) => n + PAGE)}
+            />
+          ) : null}
         </View>
       )}
     </Screen>

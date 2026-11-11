@@ -8,7 +8,7 @@ export const phq9: Instrument = {
   minutes: 2,
   clinical: true,
   crisisItem: 8,
-  intro: "Over the last 2 weeks, how often have you been bothered by the following problems?",
+  intro: "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
   whatYouGet: [
     "A screening range for depressive symptoms",
     "Suggested next steps and self-help tools",
@@ -28,8 +28,8 @@ export const phq9: Instrument = {
     { id: "phq9-5", text: "Poor appetite or overeating" },
     { id: "phq9-6", text: "Feeling bad about yourself — or that you are a failure or have let yourself or your family down" },
     { id: "phq9-7", text: "Trouble concentrating on things, such as reading the newspaper or watching television" },
-    { id: "phq9-8", text: "Moving or speaking so slowly that other people could have noticed. Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual" },
-    { id: "phq9-9", text: "Thoughts that you would be better off dead, or of hurting yourself in some way" },
+    { id: "phq9-8", text: "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual" },
+    { id: "phq9-9", text: "Thoughts that you would be better off dead or of hurting yourself in some way" },
   ],
   scoring: { kind: "sum" },
   bands: [
@@ -40,6 +40,6 @@ export const phq9: Instrument = {
     { min: 20, label: "Severe", note: "Severe symptoms; professional evaluation strongly advised." },
   ],
   source: "Kroenke, Spitzer & Williams (2001), J Gen Intern Med 16(9):606–613.",
-  licence: "Public domain / free to use (Pfizer copyright released).",
+  licence: "Developed by Drs. Robert L. Spitzer, Janet B.W. Williams, Kurt Kroenke and colleagues, with an educational grant from Pfizer Inc. No permission required to reproduce, translate, display or distribute.",
   scienceUrl: "https://pubmed.ncbi.nlm.nih.gov/11556941/",
 };

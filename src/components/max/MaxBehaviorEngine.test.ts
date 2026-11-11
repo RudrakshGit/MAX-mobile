@@ -99,14 +99,19 @@ describe("MaxBehaviorEngine", () => {
     assert.equal(resolveDirection(-10, -10), "upLeft");
   });
 
-  it("handles screenFocus jump → landed → idle sequence", () => {
+  it("handles screenFocus jump → active (the hop clip lands by itself)", () => {
     const engine = new BehaviorEngine("idle");
     engine.send("screenFocus");
     assert.equal(engine.behavior, "jump");
 
     engine.send("animationEnd");
-    assert.equal(engine.behavior, "landed");
+    assert.equal(engine.behavior, "active");
+  });
 
+  it("a shaken MAX gets dizzy and then calms down, never angry", () => {
+    const engine = new BehaviorEngine("idle");
+    engine.send("shake");
+    assert.equal(engine.behavior, "dizzy");
     engine.send("animationEnd");
     assert.equal(engine.behavior, "idle");
   });

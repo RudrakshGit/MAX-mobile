@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bucket, lastNight, onSpans } from "./screen-time.ts";
+import { bucket, lastNight, onSpans, sleepStart } from "./screen-time.ts";
 
 const now = new Date(2026, 8, 29, 9, 0); // 9 am
 const at = (day: number, h: number, min = 0) => new Date(2026, 8, day, h, min).getTime();
@@ -30,4 +30,11 @@ test("screen already on at window start when first event is off", () => {
 
 test("buckets", () => {
   assert.deepEqual([0, 7, 10, 30, 44, 60, 200].map(bucket), [0, 0, 15, 30, 30, 60, 60]);
+});
+
+test("no screen use at all in the evening: sleep time is unknown, not the start of the window", () => {
+  const from = Date.UTC(2026, 10, 2, 14, 30); // 8 pm IST
+  const to = from + 16 * 3600e3;
+  assert.equal(sleepStart([], from, to), null);
+  assert.equal(sleepStart([[to - 3600e3, to - 1800e3]], from, to), null);
 });

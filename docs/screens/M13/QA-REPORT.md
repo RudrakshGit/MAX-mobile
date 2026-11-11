@@ -16,10 +16,13 @@ The first version of this file marked every row PASS without evidence (7 screens
 | Performance, dev build, Profile screen idle (before → after the boil/walk-phase change) | measured | Janky frames 46 % → 1.5 %, p50 48 → 17 ms, p90 109 → 23 ms, CPU 102–173 % → ~31 %. |
 | Performance, **release build** (arm64 emulator with software rendering, not a real phone) | measured | Screen idle with MAX asleep: 0 frames drawn, CPU 1.6 %. Floating MAX awake (bobbing): ~35 frames/s at about 35 ms each on this emulator. Scrolling the Tests list up and down 4×: 331 frames, 12.7 % janky, p50 40 ms, p90 65 ms. The Tests screen draws one hand-drawn SVG frame per card; **check on a real mid-range phone before judging**. |
 
+| Reduced motion (system animations off), 27 Oct | pass (after fix) | The start-up logo used to stay forever in this mode; fixed. Theme switch changes instantly. |
+| Screen-reader labels (`uiautomator` sweep of Home, Tests, Tools, Learn, Journal, Talk, Settings, Profile), 27 Oct | pass (after fix) | No unlabelled controls; duplicate unlabelled checkbox in the daily plan removed; check-in questions announced as labelled groups; small targets given larger hit areas. |
+| Storage migration, 27 Oct | pass | Data saved under the old single key moved to chunked storage and survived two cold restarts. |
+
 ## Not checked yet (do not treat as passed)
 
 - Greyscale view, contrast measurements (the contrast numbers from the first report were calculated, not measured on screens).
-- Reduced-motion screenshots (the code path exists: `useReducedMotionSafe`; the theme switch now skips straight to the new theme).
 - Gesture-navigation phones, small (320 dp) screens, Android 12 and below.
 - "At most one motion moment per screen": MAX can still appear twice on the Home screen while the daily thought is open (hero MAX + floating MAX is hidden on Home, so this is OK there), and on Learn/Journal/Tests the floating MAX is the only loop. The earlier table is not evidence.
 - Scrolling a journal list with 60 entries.

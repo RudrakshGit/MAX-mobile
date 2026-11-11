@@ -17,7 +17,7 @@ export default function TestsAbout() {
 
   return (
     <Page>
-      <Stack.Screen options={{ title: "About these tests" }} />
+      <Stack.Screen options={{ title: "About tests" }} />
       <View style={{ gap: space.md }}>
         <T v="title">Evidence & Licences</T>
         <T soft>

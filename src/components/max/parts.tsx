@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Circle, Ellipse, G, Path } from "react-native-svg";
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, Path, Rect } from "react-native-svg";
 
 export const MAX_VIEWBOX = "0 0 180 172";
 
@@ -20,16 +20,54 @@ export interface PartsProps {
   ink: string;
   paper: string;
   boilVariant?: number;
+  /** Walking pose: the traced feet and side flaps are hidden so separate, animated legs and arms can take over. */
+  walking?: boolean;
 }
 
+// Walking pose geometry, in the 180×172 viewBox (drawn after the Walking pose on the MAX design sheet).
+// The traced body keeps its head and tuft; below the shoulders its sides and feet are cut away, the two inner
+// flap lines are painted over, and a round bottom closes it. The fluffy side lobes (hands) and the charcoal
+// feet are separate layers in MaxWalk.tsx so they can move.
+export const WALK_BOTTOM_FILL = "M14,134 L166,134 L158,146 C 150,160 120,165 90,165 C 60,165 30,160 22,146 Z";
+export const WALK_BOTTOM_LINE = "M22,146 C 30,160 60,165 90,165 C 120,165 150,160 158,146";
+export const WALK_LOBE_FILL = "M24,88 C 12,96 -2,120 1,144 C 4,156 18,161 30,157 C 41,153 43,140 38,124 C 34,110 28,96 24,88 Z";
+export const WALK_LOBE_LINE = "M24,88 C 12,96 -2,120 1,144 C 4,156 18,161 30,157 C 41,153 43,140 38,124 C 36,117 33,111 30,106";
+export const WALK_SHOULDER = { x: 24, y: 92 };
+export const WALK_FEET = { left: 60, right: 120, y: 170, rx: 15, ry: 9 };
+
 /** Body silhouette with tuft curl, chubby side-flap arms and feet — fully solid & opaque */
-export function MaxBody({ ink, paper, boilVariant = 0 }: PartsProps) {
+export function MaxBody({ ink, paper, boilVariant = 0, walking = false }: PartsProps) {
   const transforms = [
     undefined,
     "translate(90, 86) scale(1.006, 0.994) translate(-90.4, -85.6)",
     "translate(90, 86) scale(0.995, 1.005) translate(-89.6, -86.4)",
   ];
   const tr = transforms[boilVariant % 3];
+
+  if (walking) {
+    return (
+      <G>
+        <Defs>
+          <ClipPath id="maxWalkClip">
+            {/* one path: head and shoulders full width, below that only the middle (a two-rect union is not
+                supported by react-native-svg on Android) */}
+            <Path d="M-10,-10 H190 V96 H166 V141 H14 V96 H-10 Z" />
+          </ClipPath>
+        </Defs>
+        <G clipPath="url(#maxWalkClip)">
+          <Path d={BODY_PAPER_FILL} fill={paper} />
+          <Path d={BODY_PATH} fill={ink} transform={tr} />
+        </G>
+        {/* paint over the traced inner flap lines; the moving side lobes replace them */}
+        <Rect x={34} y={128} width={12} height={14} fill={paper} />
+        <Rect x={149} y={114} width={18} height={28} fill={paper} />
+        {/* paper rim under the bottom line, matching the paper edge around the traced outline */}
+        <Path d={WALK_BOTTOM_LINE} fill="none" stroke={paper} strokeWidth={8} strokeLinecap="round" />
+        <Path d={WALK_BOTTOM_FILL} fill={paper} />
+        <Path d={WALK_BOTTOM_LINE} fill="none" stroke={ink} strokeWidth={3.6} strokeLinecap="round" />
+      </G>
+    );
+  }
 
   return (
     <G>
@@ -269,10 +307,10 @@ export function MaxMouth({
 }
 
 /** Cute Cheek Blush */
-export function MaxBlush({ ink, visible = true }: { ink: string; visible?: boolean }) {
+export function MaxBlush({ ink, visible = true, opacity = 0.35 }: { ink: string; visible?: boolean; opacity?: number }) {
   if (!visible) return null;
   return (
-    <G opacity={0.35} fill={ink}>
+    <G opacity={opacity} fill={ink}>
       <Ellipse cx={66} cy={105} rx={6} ry={4} />
       <Ellipse cx={135} cy={101} rx={6} ry={4} />
     </G>
@@ -305,9 +343,56 @@ export function ThinkingDots({ ink, opacity = 1 }: { ink: string; opacity?: numb
 export function SleepZs({ ink }: { ink: string }) {
   return (
     <G stroke={ink} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none">
-      <Path d="M125 40 L135 40 L125 50 L135 50" />
-      <Path d="M138 24 L146 24 L138 32 L146 32" />
-      <Path d="M150 10 L156 10 L150 16 L156 16" />
+      {/* rising up and away from the head line, never touching it */}
+      <Path d="M137 32 L147 32 L137 42 L147 42" />
+      <Path d="M150 16 L158 16 L150 24 L158 24" />
+      <Path d="M162 3 L168 3 L162 9 L168 9" />
+    </G>
+  );
+}
+
+export const SLEEP_PATHS = [
+  "M117 87 c-9 -3 -9 -5 0 -2 8 2 19 -1 20 -7 1 -3 -1 -5 -3 -3 -2 1 -3 0 -1 -2 4 -4 8 2 6 7 -3 7 -13 10 -22 7z",
+  "M80 84 c-13 -2 -27 -11 -34 -20 -2 -3 -6 -6 -8 -8 -3 -2 -7 -4 -8 -6 -2 -2 -4 -3 -6 -3 -15 0 -27 -23 -20 -38 4 -7 8 -9 16 -9 l7 0 -4 2 c-6 4 -9 14 -7 21 3 10 14 26 21 30 2 1 7 5 12 10 15 15 36 22 52 18 2 -1 5 -1 6 0 6 2 -17 5 -27 3z",
+  "M119 76 c0 0 3 -3 6 -5 4 -2 8 -7 11 -11 3 -4 5 -6 5 -5 0 5 -15 21 -20 21 -1 0 -2 0 -2 0z",
+  "M142 50 c0 -1 2 -5 5 -8 13 -14 15 -28 6 -36 -4 -4 -10 -6 -12 -5 0 1 -1 4 -1 7 1 8 0 9 -2 3 -2 -5 -6 -10 -8 -9 -1 0 -1 0 -1 -1 1 -1 5 -1 13 -1 12 0 12 0 15 3 4 3 4 3 4 18 0 7 -4 14 -10 21 -3 4 -6 6 -6 7 0 0 -1 1 -1 2 -2 1 -2 1 -2 -1z",
+  "M81 26 c-2 -2 2 -5 5 -5 3 0 7 2 7 4 0 1 -3 1 -3 0 -1 -2 -5 -1 -7 1 -1 1 -2 1 -2 0z",
+  "M122 26 c-1 -2 -5 -2 -5 -1 -1 2 -3 1 -3 -1 0 0 1 -2 2 -2 4 -2 9 0 9 3 0 2 -1 3 -3 1z",
+  "M103 18 c-4 0 -5 -1 -3 -2 2 -1 8 0 9 0 0 1 -1 3 -2 3 0 0 -2 -1 -4 -1z",
+  "M50 8 c-1 -1 -4 -4 -6 -5 l-4 -3 4 0 c2 0 4 0 4 1 0 1 0 1 1 1 0 -1 1 0 1 0 0 3 1 6 2 8 2 2 0 1 -2 -2z",
+  "M114 7 c-4 -1 -7 -2 -9 -5 l-2 -2 12 0 c13 0 13 0 12 2 -1 2 -8 6 -9 6 0 0 -2 -1 -4 -1z",
+  "M84 5 c-9 -4 -8 -5 6 -5 l13 0 -4 3 c-3 3 -10 4 -15 2z"
+];
+export const SLEEP_PAPER_FILL = "M 24 10 C 20 28, 28 52, 46 68 C 66 82, 104 82, 126 70 C 146 54, 154 28, 148 10 C 130 6, 46 6, 24 10 Z";
+
+/** Dedicated Sleeping Mascot Pose: authentic flop/puddle from the MAX design sheet */
+export function MaxSleepingPose({ ink, paper }: { ink: string; paper: string }) {
+  return (
+    <G>
+      <G transform="matrix(1 0 0 -1 0 155)">
+        <Path d={SLEEP_PAPER_FILL} fill={paper} />
+        <G fill={ink}>
+          {SLEEP_PATHS.map((d, i) => (
+            <Path key={i} d={d} />
+          ))}
+        </G>
+        <Ellipse cx={68} cy={35} rx={10} ry={5} fill={ink} opacity={0.12} />
+        <Ellipse cx={134} cy={35} rx={10} ry={5} fill={ink} opacity={0.12} />
+      </G>
+      {/* Upright floating Zzz above head */}
+      <SleepZs ink={ink} />
+    </G>
+  );
+}
+
+/** Breathing out: three soft strokes of air leaving the "o" mouth (Max.tsx fades and drifts them with the breath). */
+export function BreathPuffs({ ink }: { ink: string }) {
+  return (
+    // drifting down and out below the right cheek, so the blush stays clear
+    <G stroke={ink} strokeLinecap="round" fill="none">
+      <Path d="M 109 113 Q 115 114 120 118" strokeWidth={2} opacity={0.7} />
+      <Path d="M 107 117 Q 112 121 117 124" strokeWidth={1.8} opacity={0.55} />
+      <Path d="M 104 120 Q 107 125 111 128" strokeWidth={1.6} opacity={0.4} />
     </G>
   );
 }
@@ -333,13 +418,18 @@ export function CheerSparkles({ ink }: { ink: string }) {
 }
 
 /** Sweat drop — shown during falling state */
-export function SweatDrop({ ink }: { ink: string }) {
+export function SweatDrop({ ink, paper = "none" }: { ink: string; paper?: string }) {
+  // An outlined drop just outside the head line: a solid one sitting on the outline read as a dark blot.
   return (
-    <G opacity={0.75}>
+    <G transform="translate(-12, 2)">
       <Path
         d="M50 52 C 50 48 54 44 54 40 C 56 44 60 48 60 52 C 60 55 55 58 55 58 C 55 58 50 55 50 52 Z"
-        fill={ink}
+        fill={paper}
+        stroke={ink}
+        strokeWidth={1.8}
+        strokeLinejoin="round"
       />
+      <Path d="M53 51 Q 52.5 47.5 54.5 45" stroke={ink} strokeWidth={1.1} strokeLinecap="round" fill="none" opacity={0.6} />
     </G>
   );
 }
@@ -458,58 +548,67 @@ export function HummingNotes({ ink, offset = 0 }: { ink: string; offset?: number
   );
 }
 
-/** Whistle wind puffs and floating musical notes — blown during whistling/walking */
+/** Whistle wind puffs and floating musical notes — blown into the open air well above and ahead of the face */
 export function WhistleBlowing({ ink, offset = 0 }: { ink: string; offset?: number }) {
   const driftY = -Math.sin(offset) * 3;
   return (
-    <G opacity={0.85} transform={`translate(0, ${driftY})`}>
-      {/* Whistle air puffs from puckered mouth */}
+    <G opacity={0.9} transform={`translate(0, ${driftY})`}>
+      {/* Whistle air puffs from puckered mouth drifting gently forward */}
       <Path
-        d="M112 106 Q 118 104 124 107"
+        d="M 112 108 Q 117 106 122 107"
         stroke={ink}
         strokeWidth={1.8}
         strokeLinecap="round"
         fill="none"
-        opacity={0.7}
+        opacity={0.65}
       />
       <Path
-        d="M114 110 Q 120 112 126 109"
+        d="M 114 112 Q 119 113 124 111"
         stroke={ink}
-        strokeWidth={1.6}
+        strokeWidth={1.5}
         strokeLinecap="round"
         fill="none"
-        opacity={0.5}
+        opacity={0.45}
       />
 
-      {/* Floating Whistle Note 1 */}
+      {/* Floating Whistle Note 1: Eighth note ♪ in the open corner above the head, clear of the outline */}
       <Path
-        d="M136 94 A 3.5 2.5 0 1 1 132.5 96.5 L132.5 84 L141 81.5 L141 89"
+        d="M 156 37 A 3.5 2.5 0 1 1 152.5 39.5 L 152.5 26 L 161 23.5 L 161 30"
         stroke={ink}
         strokeWidth={1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      <Circle cx={132.5} cy={95.5} r={2.5} fill={ink} />
+      <Circle cx={152.5} cy={38.5} r={2.5} fill={ink} />
 
-      {/* Floating Whistle Note 2 */}
+      {/* Floating Whistle Note 2: Higher note floating outward into breeze */}
       <Path
-        d="M148 76 A 3 2 0 1 1 145 78 L145 68 L152 66 L152 72"
+        d="M 170 17 A 3 2 0 1 1 167 19 L 167 8 L 175 6 L 175 13"
         stroke={ink}
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      <Circle cx={145} cy={77} r={2.2} fill={ink} />
+      <Circle cx={167} cy={18} r={2.2} fill={ink} />
 
-      {/* Whistle sparkle */}
+      {/* Whistle sparkles in the open sky */}
       <Path
-        d="M128 82 L132 82 M130 80 L130 84"
+        d="M 144 18 L 148 18 M 146 16 L 146 20"
         stroke={ink}
         strokeWidth={1.4}
         strokeLinecap="round"
         fill="none"
+        opacity={0.75}
+      />
+      <Path
+        d="M 170 32 L 174 32 M 172 30 L 172 34"
+        stroke={ink}
+        strokeWidth={1.2}
+        strokeLinecap="round"
+        fill="none"
+        opacity={0.6}
       />
     </G>
   );
@@ -590,12 +689,3 @@ export function AngryVein({ ink }: { ink: string }) {
     </G>
   );
 }
-
-/** Deprecated duplicate limbs - Max's true side flaps and feet are part of MaxBody */
-export function MaxWalkingFeet(_props: { ink: string; paper: string; stepPhase?: number }) {
-  return null;
-}
-export function FlyingArms(_props: { ink: string }) {
-  return null;
-}
-

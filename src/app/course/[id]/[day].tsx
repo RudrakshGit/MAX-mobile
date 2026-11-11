@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, Linking } from "react-native";
 import { Stack, router, useLocalSearchParams, type Href } from "expo-router";
 import { coursesById } from "@/content/courses";
 import { resourcesById } from "@/content/resources";
-import { logActivity, update, useStore } from "@/lib/store";
+import { logActivity, newId, update, useStore } from "@/lib/store";
 import { radius, space, useTheme } from "@/lib/theme";
 import { Button, Field, Page, Section, T, call, openWebUrl } from "@/lib/ui";
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
@@ -22,14 +22,16 @@ export default function LessonScreen() {
   const isUnhelpful = progress?.unhelpful?.includes(dayNum);
 
   const [writeText, setWriteText] = useState("");
+  const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<"yes" | "no" | null>(
     isUnhelpful ? "no" : isDone ? "yes" : null
   );
 
+  // the day counts as done after it has been read for a while (30 s), or when it is marked
   useEffect(() => {
-    if (id && dayNum) {
-      logActivity("learn", `${id}:${dayNum}`);
-    }
+    if (!id || !dayNum) return;
+    const t = setTimeout(() => logActivity("learn", `${id}:${dayNum}`), 30_000);
+    return () => clearTimeout(t);
   }, [id, dayNum]);
 
   if (!course || !lesson) {
@@ -43,6 +45,7 @@ export default function LessonScreen() {
 
   const markProgress = (helpful: boolean) => {
     setFeedback(helpful ? "yes" : "no");
+    logActivity("learn", `${course.id}:${dayNum}`);
     update((s) => {
       const cur = s.courseProgress[course.id] || { done: [], unhelpful: [] };
       const newDone = Array.from(new Set([...cur.done, dayNum]));
@@ -63,7 +66,7 @@ export default function LessonScreen() {
 
   return (
     <Page>
-      <Stack.Screen options={{ title: `${course.title} · Day ${dayNum}` }} />
+      <Stack.Screen options={{ title: `Day ${dayNum}` }} />
 
       <View style={{ gap: space.lg, paddingBottom: space.xl }}>
         {/* Lesson Header */}
@@ -114,18 +117,26 @@ export default function LessonScreen() {
               <T soft>{lesson.action.write}</T>
               <Field
                 value={writeText}
-                onChangeText={setWriteText}
+                onChangeText={(v) => (setWriteText(v), setSaved(false))}
                 multiline
+                maxLength={2000}
                 placeholder="Write your brief reflection here..."
                 style={{ minHeight: 70 }}
               />
               <Button
                 kind="secondary"
-                label="Save reflection"
+                label={saved ? "Saved to your journal" : "Save reflection"}
+                disabled={!writeText.trim() || saved}
                 onPress={() => {
-                  if (writeText.trim()) {
-                    markProgress(true);
-                  }
+                  const text = writeText.trim();
+                  if (!text || saved) return;
+                  // kept as a journal entry, so the student can find it again in Journal
+                  const now = Date.now();
+                  update((s) => ({
+                    entries: [{ id: newId(), at: now, updatedAt: now, feelings: [], influences: [], text, prompt: "write" in lesson.action ? lesson.action.write : undefined }, ...s.entries],
+                  }));
+                  setSaved(true);
+                  markProgress(true);
                 }}
               />
             </View>
@@ -149,7 +160,7 @@ export default function LessonScreen() {
               label={watchResource.url.includes("youtube") ? "Watch on YouTube" : "Read resource"}
               onPress={() => {
                 if (watchResource.url.includes("youtube.com") || watchResource.url.includes("youtu.be")) {
-                  Linking.openURL(watchResource.url);
+                  Linking.openURL(watchResource.url).catch(() => openWebUrl(watchResource.url));
                 } else {
                   openWebUrl(watchResource.url);
                 }
@@ -187,12 +198,12 @@ export default function LessonScreen() {
         {nextLesson ? (
           <Button
             label={`Go to Day ${nextLesson.day}: ${nextLesson.title}`}
-            onPress={() => router.push(`/course/${course.id}/${nextLesson.day}`)}
+            onPress={() => router.replace(`/course/${course.id}/${nextLesson.day}`)}
           />
         ) : (
           <Button
             label="Back to course overview"
-            onPress={() => router.push(`/course/${course.id}`)}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace(`/course/${course.id}`))}
           />
         )}
 
@@ -209,7 +220,7 @@ export default function LessonScreen() {
           <T v="small" soft>
             If you are experiencing distress, speak to someone trained and caring:
           </T>
-          <Pressable onPress={() => call("14416")} style={{ marginTop: 2 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Call Tele-MANAS, 14416, 24 by 7 national helpline" hitSlop={12} onPress={() => call("14416")} style={{ marginTop: 2 }}>
             <T v="small" style={{ color: t.ink, fontWeight: "600" }}>
               Tele-MANAS: 14416 (24×7 National Helpline)
             </T>

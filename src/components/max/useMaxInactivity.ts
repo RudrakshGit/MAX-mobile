@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { AppState } from "react-native";
 
 const IDLE_MS = 6_000;
-const SLEEP_MS = 10_000;
+const SLEEP_MS = 60_000; // and only at night (useMaxBehavior)
 const NUDGE_CHANCE = 0.3;
 
 export interface InactivityCallbacks {

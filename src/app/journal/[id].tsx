@@ -1,11 +1,11 @@
 import { showAlert } from "@/lib/dialog";
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams, type Href } from "expo-router";
 import { FEELINGS, INFLUENCES } from "@/content/feelings";
 import { askReflection } from "@/lib/api";
 import { moodWords } from "@/lib/insights";
-import { update, useStore } from "@/lib/store";
+import { tombstone, update, useStore } from "@/lib/store";
 import { space, useTheme } from "@/lib/theme";
 import { Button, CrisisCard, Page, Section, T } from "@/lib/ui";
 import { classifyRisk } from "@/safety/classifier";
@@ -106,6 +106,7 @@ export default function JournalDetail() {
           }
           update((s) => ({
             entries: s.entries.filter((e) => e.id !== entry.id),
+            tombstones: tombstone(s, entry.id),
           }));
           router.back();
         },
@@ -124,6 +125,7 @@ export default function JournalDetail() {
                 accessibilityRole="button"
                 accessibilityLabel="Edit entry"
                 onPress={() => router.push(`/journal-new?id=${entry.id}`)}
+                hitSlop={8}
                 style={{ padding: space.xs }}>
                 <DoodleIcon name="edit" size={20} color={t.ink} />
               </Pressable>
@@ -131,6 +133,7 @@ export default function JournalDetail() {
                 accessibilityRole="button"
                 accessibilityLabel="Delete entry"
                 onPress={handleDelete}
+                hitSlop={8}
                 style={{ padding: space.xs }}>
                 <DoodleIcon name="trash" size={20} color={t.ink2} />
               </Pressable>
@@ -217,6 +220,11 @@ export default function JournalDetail() {
                   {entry.transcript.roman ?? entry.transcript.raw ?? "—"}
                 </T>
               </Frame>
+            ) : entry.transcript.status === "pending" && !consents.voice ? (
+              <View style={{ gap: space.sm, padding: space.md, borderRadius: 12, borderWidth: 1, borderColor: t.hair }}>
+                <T soft>Voice-to-text is off, so this note is kept as audio only.</T>
+                <Button kind="quiet" label="Turn on voice-to-text in Settings" onPress={() => router.push("/profile/settings/ai" as Href)} />
+              </View>
             ) : entry.transcript.status === "pending" ? (
               <View
                 style={{

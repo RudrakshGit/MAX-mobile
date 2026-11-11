@@ -7,6 +7,7 @@ export const tech: Instrument = {
   category: "phone",
   minutes: 1,
   clinical: false,
+  ownWording: true,
   intro: "Think about the last 7 days with your phone, laptop and college apps.",
   whatYouGet: [
     "Overall tech-stress score (8–40)",

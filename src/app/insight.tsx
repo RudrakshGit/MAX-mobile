@@ -2,12 +2,13 @@ import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { fetchDailyInsight } from "@/lib/api";
-import { hasRecentCrisis, insightSignals } from "@/lib/insights";
+import { hasRecentCrisis, insightSignals, isTemplateLabel } from "@/lib/insights";
 import { today, update, useStore, type Insight } from "@/lib/store";
 import { font, radius, space, useTheme } from "@/lib/theme";
 import { Stack } from "expo-router";
 import { Button, call, Screen, Section, T } from "@/lib/ui";
 import { INSIGHT_THEMES } from "@/server/insightThemes";
+import { pickTheme } from "@/server/pickTheme";
 import { Frame } from "@/ui/sketch/Frame";
 
 export default function InsightScreen() {
@@ -18,6 +19,7 @@ export default function InsightScreen() {
   const existing = state.insights.find((i) => i.date === currentDate);
 
   const [loading, setLoading] = useState(false);
+  const [fallback, setFallback] = useState<Insight | null>(null);
   const isCrisis = hasRecentCrisis(state);
 
   useEffect(() => {
@@ -30,15 +32,18 @@ export default function InsightScreen() {
       const signals = insightSignals(state, currentDate);
       let article: Insight | null = null;
 
-      if (state.consents.ai) {
+      // The reflection uses only check-in averages and test ranges (never journal text): the same data the
+      // student agreed Max may use in onboarding ("What your companion knows" in Settings).
+      if (state.shareContext) {
         article = await fetchDailyInsight(signals);
       }
+      const fromAi = !!article;
 
-      // Fallback if AI disabled, offline, or guard tripped
+      // Offline or switched off: a written article chosen from the student's own numbers.
       if (!article) {
         const avoid = new Set(signals.avoidTitles);
         const eligible = INSIGHT_THEMES.filter((th) => !avoid.has(th.title));
-        const theme = eligible[0] ?? INSIGHT_THEMES[0];
+        const theme = pickTheme(signals, eligible.length ? eligible : INSIGHT_THEMES);
         article = {
           date: currentDate,
           title: theme.title,
@@ -59,10 +64,15 @@ export default function InsightScreen() {
           })),
         };
 
-        update((s) => {
-          const list = [cleanArticle, ...s.insights.filter((i) => i.date !== currentDate)].slice(0, 60);
-          return { ...s, insights: list };
-        });
+        if (fromAi) {
+          update((s) => {
+            const list = [cleanArticle, ...s.insights.filter((i) => i.date !== currentDate)].slice(0, 60);
+            return { ...s, insights: list };
+          });
+        } else {
+          // not saved, so the personal version is fetched next time the student is online
+          setFallback(cleanArticle);
+        }
         setLoading(false);
       }
     }
@@ -73,7 +83,7 @@ export default function InsightScreen() {
     };
   }, [currentDate, existing, isCrisis]);
 
-  const article = existing;
+  const article = existing ?? fallback;
 
   const rightButton = (
     <Pressable
@@ -134,7 +144,7 @@ export default function InsightScreen() {
     <Screen
       title={article ? article.title : "Daily insight"}
       right={rightButton}>
-      <Stack.Screen options={{ title: article ? article.title : "Daily insight" }} />
+      <Stack.Screen options={{ title: article ? "Read" : "Daily insight" }} />
       <T soft style={{ marginTop: -space.sm, marginBottom: space.md }}>
         {new Date(currentDate + "T12:00:00").toLocaleDateString("en-IN", {
           weekday: "long",
@@ -176,9 +186,11 @@ export default function InsightScreen() {
                   {sec.tag}
                 </T>
               </View>
-              <T v="heading" style={{ fontSize: 17 }}>
-                {sec.heading}
-              </T>
+              {!isTemplateLabel(sec.heading) ? (
+                <T v="heading" style={{ fontSize: 17 }}>
+                  {sec.heading}
+                </T>
+              ) : null}
               <T style={{ lineHeight: 22 }}>
                 {sec.body}
               </T>

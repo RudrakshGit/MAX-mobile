@@ -1,280 +1,72 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, View, StyleSheet } from "react-native";
-import { Redirect, Stack, router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Pressable, View } from "react-native";
+import { Redirect, Stack } from "expo-router";
 import { Max, type MaxState } from "@/components/max";
-import { useReducedMotionSafe } from "@/components/max/useReducedMotionSafe";
-import {
-  WellnessFigure,
-  GrowthFigure,
-  PersonalityFigure,
-  DigitalBalanceFigure,
-  LearningFigure,
-} from "@/ui/illustrations";
-import { Avatar } from "@/ui/Avatar";
-import { ALL_AVATARS } from "@/content/avatars";
-import { radius, space, useTheme } from "@/lib/theme";
-import { Button, Page, Section, T } from "@/lib/ui";
-import { DoodleIcon } from "@/ui/icons/DoodleIcon";
+import { MaxRig } from "@/components/max/rig/MaxRig";
+import { BLINK_CLIP, CLIPS, type ClipName } from "@/components/max/rig/clips";
+import { DEFAULT_FACE, NO_MARKS, REST, clipLength, type Clip } from "@/components/max/rig/pose";
+import { sampleFace, sampleMarks, samplePose } from "@/components/max/rig/sample";
+import { useRigPlayer, useRigValues } from "@/components/max/rig/useRigPlayer";
+import { space, useTheme } from "@/lib/theme";
+import { Page, Section, T } from "@/lib/ui";
 
-const MAX_STATES: { state: MaxState; label: string; desc: string }[] = [
-  { state: "idle", label: "Idle", desc: "Gentle breathing bob & periodic blink" },
-  { state: "wave", label: "Wave", desc: "Greeting hand wave on app open" },
-  { state: "thinking", label: "Thinking", desc: "Dots fade in sequence + head tilt" },
-  { state: "listening", label: "Listening", desc: "Attentive forward tilt with pulse" },
-  { state: "breathe", label: "Breathe", desc: "Smooth cyclic inhalation & exhalation" },
-  { state: "cheer", label: "Cheer", desc: "Celebration hop with sparkles" },
-  { state: "care", label: "Care", desc: "Warm empathetic sway with care heart" },
-  { state: "sleep", label: "Sleep", desc: "Peaceful slumber with floating Zs" },
-  { state: "empty", label: "Empty", desc: "Curious line-boil outline for zero states" },
-];
+// Developer builds only: MAX's clips, played live and frozen as a filmstrip (six moments), so motion can be checked from
+// screenshots (docs/plan/M16-motion-cards-ia.md, "How an agent checks motion"). Release builds redirect home.
 
-import { useStore, update } from "@/lib/store";
+const STATES: MaxState[] = ["idle", "wave", "thinking", "listening", "breathe", "cheer", "care", "empty", "sleep"];
+const NAMES = [...(Object.keys(CLIPS) as ClipName[]), "blink" as const];
+const clipOf = (n: ClipName | "blink"): Clip => (n === "blink" ? BLINK_CLIP : CLIPS[n]);
 
-export default function MaxDevScreen() {
-  // Design gallery for development only; production builds bounce to Home.
+export default function MaxLab() {
   if (!__DEV__) return <Redirect href="/" />;
-  return <MaxDevScreenDev />;
+  return <Lab />;
 }
 
-function MaxDevScreenDev() {
+function Lab() {
   const t = useTheme();
-  const themePref = useStore((s) => s.themePreference);
-  const reducedMotion = useReducedMotionSafe();
-  const [selectedState, setSelectedState] = useState<MaxState>("wave");
-  const [interactiveBounce, setInteractiveBounce] = useState(0);
-
+  const [clip, setClip] = useState<ClipName | "blink">("wave");
+  const [run, setRun] = useState(0);
+  // one MAX per section: every SVG element sends a layout event when first drawn, and dozens of MAXes at once
+  // stall a debug build
+  const [state, setState] = useState<MaxState>("idle");
   return (
     <Page>
-      <Stack.Screen options={{ title: "MAX Character & Figures Dev" }} />
-
-      <View style={{ gap: space.md, paddingBottom: space.xxl }}>
-        {/* Header / Motion Banner */}
-        <View style={{ gap: space.xs }}>
-          <T v="display">MAX Character Lab</T>
-          <T soft>
-            Parametric SVG vector character, Open Peeps student avatars, and Serene hand-drawn figures.
-          </T>
-          <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.xs, alignItems: "center" }}>
-            <Button
-              kind="quiet"
-              icon="sun"
-              label={`Theme: ${themePref === "dark" ? "Dark 🌙" : "Light ☀️"}`}
-              onPress={() =>
-                update((s) => ({
-                  themePreference: s.themePreference === "dark" ? "light" : "dark",
-                }))
-              }
-            />
-          </View>
-          <View
-            style={[
-              styles.infoBadge,
-              { backgroundColor: t.raised, borderColor: t.rule },
-            ]}
-          >
-            <DoodleIcon name={reducedMotion ? "lock" : "activity"} size={16} color={t.ink} />
-            <T v="small" soft>
-              {reducedMotion
-                ? "Reduced motion active (animations frozen to static pose)"
-                : "Reduced motion disabled (full Reanimated UI thread loops)"}
-            </T>
-          </View>
-        </View>
-
-        {/* Large Interactive Hero Showcase */}
-        <Section title="Interactive Mascot">
-          <View
-            style={[
-              styles.heroBox,
-              { backgroundColor: t.raised, borderColor: t.rule },
-            ]}
-          >
+      <Stack.Screen options={{ title: "MAX lab" }} />
+      <View style={{ gap: space.lg, paddingBottom: space.xxl }}>
+        {/* buttons and the filmstrip first, so one screenshot shows a whole clip */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          {NAMES.map((n) => (
             <Pressable
+              key={n}
               accessibilityRole="button"
-              accessibilityLabel="Tap to bounce Max"
-              onPress={() => setInteractiveBounce((c) => c + 1)}
-              style={styles.heroPressable}
-            >
-              <Max state={selectedState} size={150} />
+              accessibilityLabel={`Play ${n}`}
+              onPress={() => {
+                setClip(n);
+                setRun((r) => r + 1);
+              }}
+              style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: n === clip ? t.ink : t.rule }}>
+              <T v="small">{n}</T>
             </Pressable>
-            <T v="heading" style={{ marginTop: space.sm }}>
-              {selectedState.toUpperCase()}
-            </T>
-            <T v="small" soft style={{ textAlign: "center", paddingHorizontal: space.md }}>
-              Tap MAX for physics spring bounce feedback.
-            </T>
-
-            {/* State selector chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: space.xs, paddingHorizontal: space.sm, marginTop: space.sm }}
-            >
-              {MAX_STATES.map((s) => {
-                const isSelected = selectedState === s.state;
-                return (
-                  <Pressable
-                    key={s.state}
-                    onPress={() => setSelectedState(s.state)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isSelected ? t.ink : t.paper,
-                        borderColor: isSelected ? t.ink : t.rule,
-                      },
-                    ]}
-                  >
-                    <T
-                      v="small"
-                      style={{
-                        color: isSelected ? t.paper : t.ink,
-                        fontWeight: isSelected ? "700" : "500",
-                      }}
-                    >
-                      {s.label}
-                    </T>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+          ))}
+        </View>
+        <Section title={`Filmstrip: ${clip} (${clipLength(clipOf(clip))} ms)`}>
+          <Filmstrip clip={clipOf(clip)} />
+        </Section>
+        <Section title="Live">
+          <View style={{ alignItems: "center", paddingVertical: space.xl }}>
+            <LiveRig clip={clip} run={run} />
           </View>
         </Section>
-
-        {/* 9 States Gallery Grid */}
-        <Section title="All 9 Animation States">
-          <View style={styles.gridContainer}>
-            {MAX_STATES.map((item) => (
-              <View
-                key={item.state}
-                style={[
-                  styles.gridItem,
-                  { backgroundColor: t.raised, borderColor: t.rule },
-                ]}
-              >
-                <Max state={item.state} size={84} />
-                <T v="small" style={{ fontWeight: "700", marginTop: 4 }}>
-                  {item.label}
-                </T>
-                <T v="small" soft style={{ fontSize: 11, textAlign: "center" }}>
-                  {item.desc}
-                </T>
-              </View>
+        <Section title="A state as screens use it">
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {STATES.map((s) => (
+              <Pressable key={s} accessibilityRole="button" onPress={() => setState(s)} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: s === state ? t.ink : t.rule }}>
+                <T v="small">{s}</T>
+              </Pressable>
             ))}
           </View>
-        </Section>
-
-        {/* Serene-Style Hand-Drawn Figures */}
-        <Section title="Serene Figures (Hand-Drawn Vector)">
-          <View style={{ gap: space.sm }}>
-            <View
-              style={[
-                styles.figureRow,
-                { backgroundColor: t.raised, borderColor: t.rule },
-              ]}
-            >
-              <WellnessFigure size={90} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="heading">Wellness & Mood</T>
-                <T v="small" soft>
-                  Calm meditating student with mindful breath breeze.
-                </T>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.figureRow,
-                { backgroundColor: t.raised, borderColor: t.rule },
-              ]}
-            >
-              <GrowthFigure size={90} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="heading">Growth & Resilience</T>
-                <T v="small" soft>
-                  Climbing toward shining stars with upward momentum.
-                </T>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.figureRow,
-                { backgroundColor: t.raised, borderColor: t.rule },
-              ]}
-            >
-              <PersonalityFigure size={90} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="heading">Personality & Self</T>
-                <T v="small" soft>
-                  Serene-inspired expressive archetype faces.
-                </T>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.figureRow,
-                { backgroundColor: t.raised, borderColor: t.rule },
-              ]}
-            >
-              <DigitalBalanceFigure size={90} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="heading">Digital Balance</T>
-                <T v="small" soft>
-                  Lounging with chai and phone set gently aside.
-                </T>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.figureRow,
-                { backgroundColor: t.raised, borderColor: t.rule },
-              ]}
-            >
-              <LearningFigure size={90} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="heading">Learning & Skills</T>
-                <T v="small" soft>
-                  Student reading an open book with inspiration spark.
-                </T>
-              </View>
-            </View>
-          </View>
-        </Section>
-
-        {/* 24 Student Avatars Showcase */}
-        <Section title={`Open Peeps Avatars (${ALL_AVATARS.length} variants)`}>
-          <View
-            style={[
-              styles.avatarContainer,
-              { backgroundColor: t.raised, borderColor: t.rule },
-            ]}
-          >
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, justifyContent: "center" }}>
-              {ALL_AVATARS.map((av) => (
-                <View
-                  key={av.id}
-                  style={[
-                    styles.avatarItem,
-                    { backgroundColor: t.paper, borderColor: t.rule },
-                  ]}
-                >
-                  <Avatar id={av.id} size={46} />
-                  <T v="small" soft style={{ fontSize: 9 }}>
-                    {av.id.toUpperCase()}
-                  </T>
-                </View>
-              ))}
-            </View>
-            <View style={{ marginTop: space.sm, alignItems: "center" }}>
-              <Button
-                kind="quiet"
-                icon="user"
-                label="Open Avatar Picker in Profile →"
-                onPress={() => router.push("/profile/avatar")}
-              />
-            </View>
+          <View style={{ alignItems: "center", paddingVertical: space.xl }}>
+            <Max key={state} state={state} size={120} />
           </View>
         </Section>
       </View>
@@ -282,64 +74,51 @@ function MaxDevScreenDev() {
   );
 }
 
-const styles = StyleSheet.create({
-  infoBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.xs,
-    padding: space.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginTop: space.xs,
-  },
-  heroBox: {
-    paddingVertical: space.lg,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  heroPressable: {
-    padding: space.xs,
-  },
-  chip: {
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: space.sm,
-  },
-  gridItem: {
-    width: "31%",
-    aspectRatio: 0.82,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: space.xs,
-  },
-  figureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: space.md,
-  },
-  avatarContainer: {
-    padding: space.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-  },
-  avatarItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 4,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-});
+function LiveRig({ clip, run }: { clip: ClipName | "blink"; run: number }) {
+  const t = useTheme();
+  const player = useRigPlayer({ still: false, blinking: true });
+  const { play } = player;
+  useEffect(() => {
+    const c = clipOf(clip);
+    play(c, c.kind === "action" ? { onDone: () => play(CLIPS.idle) } : {});
+  }, [clip, run, play]);
+  return (
+    <MaxRig size={180} values={player.values} face={player.face} marks={player.marks} ink={t.characterInk} paper={t.characterPaper} foot={t.characterFoot} markInk={t.ink} blush blushColor={t.characterBlush} still={false} />
+  );
+}
+
+/** Eight frozen moments of a clip, evenly spaced, each its own rig with the sampled pose. */
+function Filmstrip({ clip }: { clip: Clip }) {
+  const len = clipLength(clip);
+  const times = Array.from({ length: 6 }, (_, i) => Math.round((len * i) / 5));
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: space.lg, paddingVertical: space.lg }}>
+      {times.map((ms) => (
+        <View key={`${clip.name}-${ms}`} style={{ alignItems: "center", gap: 2, width: "32%", paddingTop: 12 }}>
+          <Frame clip={clip} ms={ms} />
+          <T v="small" soft>{`${ms}`}</T>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Frame({ clip, ms }: { clip: Clip; ms: number }) {
+  const t = useTheme();
+  const v = useRigValues(samplePose(clip, ms, REST));
+  return (
+    <MaxRig
+      size={64}
+      values={v}
+      face={sampleFace(clip, ms, DEFAULT_FACE)}
+      marks={sampleMarks(clip, ms, NO_MARKS)}
+      ink={t.characterInk}
+      paper={t.characterPaper}
+      foot={t.characterFoot}
+      markInk={t.ink}
+      blush
+      blushColor={t.characterBlush}
+      still
+    />
+  );
+}

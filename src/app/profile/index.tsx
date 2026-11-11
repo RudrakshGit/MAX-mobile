@@ -1,8 +1,10 @@
+import { THIS_DEVICE } from "@/lib/platform";
 import { router, Stack, type Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { byId } from "@/content/instruments";
 import { update, useStore } from "@/lib/store";
+import { dateKey, whatHelps } from "@/lib/personal";
 import { font, radius, space, useTheme } from "@/lib/theme";
 import { Button, Page, Row, Section, T } from "@/lib/ui";
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
@@ -11,11 +13,17 @@ import { Avatar } from "@/ui/Avatar";
 export default function Profile() {
   const t = useTheme();
   const companion = useStore((s) => s.companion);
-  const campus = useStore((s) => s.campus);
+  const collegeName = useStore((s) => (s.college && !s.college.gone ? s.college.name : undefined));
   const results = useStore((s) => s.results);
   const checkins = useStore((s) => s.checkins);
   const insights = useStore((s) => s.insights);
   const displayName = useStore((s) => s.displayName);
+  const helped = useStore((s) => s.helped);
+  const exams = useStore((s) => s.exams);
+  const syncEmail = useStore((s) => s.sync?.email);
+  const helps = whatHelps(helped);
+  const todayKey = dateKey(new Date());
+  const nextUp = exams.find((e) => e.date >= todayKey);
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayName ?? "");
@@ -52,7 +60,10 @@ export default function Profile() {
           }}>
           <Avatar size={80} />
         </Pressable>
-        <Pressable onPress={() => router.push("/profile/avatar")}>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
+          onPress={() => router.push("/profile/avatar")}>
           <T v="small" soft style={{ textDecorationLine: "underline" }}>
             Change avatar
           </T>
@@ -63,6 +74,7 @@ export default function Profile() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: space.xs, marginTop: space.xs }}>
             <TextInput
               value={nameInput}
+              maxLength={30}
               onChangeText={setNameInput}
               placeholder="Enter your name"
               placeholderTextColor={t.hair}
@@ -85,6 +97,7 @@ export default function Profile() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Edit display name"
+            hitSlop={12}
             onPress={() => {
               setNameInput(displayName ?? "");
               setEditingName(true);
@@ -97,7 +110,7 @@ export default function Profile() {
 
         <T soft v="small">
           {companion ? `Friend of ${companion}` : "Friend"}
-          {campus ? ` · ${campus}` : ""}
+          {collegeName ? ` · ${collegeName}` : ""}
         </T>
       </View>
 
@@ -118,8 +131,8 @@ export default function Profile() {
         <Row
           icon="checklist"
           title="Tests taken"
-          sub={results.length === 0 ? "None yet — your results stay on this phone" : `${results.length} ${results.length === 1 ? "check-up" : "check-ups"} on this phone`}
-          onPress={() => router.push("/(tabs)/tests")}
+          sub={results.length === 0 ? `None yet — your results stay on ${THIS_DEVICE}` : `${results.length} ${results.length === 1 ? "check-up" : "check-ups"} on this phone`}
+          onPress={() => router.push("/check-yourself")}
           last={latestTests.length === 0}
         />
       </Section>
@@ -159,6 +172,38 @@ export default function Profile() {
       ) : null}
 
       {/* Settings & Support */}
+      <Section title="What helps you">
+        {helps.length ? (
+          <View style={{ gap: space.xs }}>
+            {helps.slice(0, 5).map((h) => (
+              <View key={h.tool} style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}>
+                <T style={{ flexShrink: 1 }}>{h.name}</T>
+                <T soft style={{ flexShrink: 0 }}>{`helped ${h.yes} of ${h.total}`}</T>
+              </View>
+            ))}
+            <T v="small" soft>From your "Did that help?" answers. MAX offers these first.</T>
+          </View>
+        ) : (
+          <T soft>After a breathing reset, grounding or a focus session, MAX asks "Did that help?". Your answers build this list, and MAX offers what works for you first.</T>
+        )}
+      </Section>
+
+      <Section title="Plans">
+        <Row
+          icon="calendar"
+          title="Exams & deadlines"
+          sub={nextUp ? `Next: ${nextUp.name}, ${new Date(`${nextUp.date}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : "Add them and MAX helps in the days before"}
+          onPress={() => router.push("/profile/exams" as Href)}
+        />
+        <Row
+          icon="cloud"
+          title="Backup"
+          sub={syncEmail ? `Backed up as ${syncEmail}` : "Optional: keep a copy with your Google account"}
+          onPress={() => router.push("/profile/account" as Href)}
+          last
+        />
+      </Section>
+
       <Section title="Settings & Support">
         <Row
           icon="settings"

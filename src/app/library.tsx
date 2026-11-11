@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Chip } from "@/ui/sketch/Chip";
+import { BUTTON_RADIUS } from "@/ui/sketch/Button";
 import { View, StyleSheet, Pressable, Linking, ScrollView, Image } from "react-native";
 import { Stack } from "expo-router";
 import { resources, TOPIC_NAMES, type Resource } from "@/content/resources";
@@ -17,6 +19,8 @@ export default function LibraryScreen() {
   const [mode, setMode] = useState<"video" | "article">("video");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  // Hindi and Hinglish together: most students here watch both.
+  const [hindiOnly, setHindiOnly] = useState(false);
 
   const topics = [
     { label: "All topics", value: "all" },
@@ -34,19 +38,21 @@ export default function LibraryScreen() {
   const filteredResources = okResources.filter((r) => {
     if (r.kind !== mode) return false;
     if (selectedTopic !== "all" && r.topic !== selectedTopic) return false;
+    if (hindiOnly && r.language === "en") return false;
     if (q.length > 0) {
       const topicName = TOPIC_NAMES[r.topic]?.toLowerCase() ?? "";
       const matchesTitle = r.title.toLowerCase().includes(q);
       const matchesCreator = r.creator.toLowerCase().includes(q);
       const matchesTopic = topicName.includes(q) || r.topic.toLowerCase().includes(q);
-      return matchesTitle || matchesCreator || matchesTopic;
+      const matchesLanguage = (q === "hindi" || q === "हिंदी") && r.language !== "en";
+      return matchesTitle || matchesCreator || matchesTopic || matchesLanguage;
     }
     return true;
   });
 
   const openResource = (r: Resource) => {
     if (r.url.includes("youtube.com") || r.url.includes("youtu.be")) {
-      Linking.openURL(r.url);
+      Linking.openURL(r.url).catch(() => openWebUrl(r.url));
     } else {
       openWebUrl(r.url);
     }
@@ -83,19 +89,14 @@ export default function LibraryScreen() {
             onPress={() => setMode("video")}
             style={{ flex: 1 }}
           >
-            <Frame
-              id="tab-watch"
-              fill
-              fillColor={mode === "video" ? t.raised : t.paper}
-              strokeColor={mode === "video" ? t.ink : t.rule}
-              strokeWidth={mode === "video" ? 1.8 : 1}
-              style={styles.tabButton}
+            <View
+              style={[styles.tabButton, { borderRadius: BUTTON_RADIUS, borderWidth: 1.5, backgroundColor: mode === "video" ? t.ink : t.raised, borderColor: mode === "video" ? t.ink : t.rule }]}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <DoodleIcon name="play" size={16} color={t.ink} />
-                <T v="heading" style={{ fontSize: 14 }}>{`Watch (${videoCount})`}</T>
+                <DoodleIcon name="play" size={16} color={mode === "video" ? t.inverseInk : t.ink} />
+                <T v="heading" style={{ fontSize: 14, color: mode === "video" ? t.inverseInk : t.ink }}>{`Watch (${videoCount})`}</T>
               </View>
-            </Frame>
+            </View>
           </Pressable>
 
           <Pressable
@@ -105,29 +106,36 @@ export default function LibraryScreen() {
             onPress={() => setMode("article")}
             style={{ flex: 1 }}
           >
-            <Frame
-              id="tab-read"
-              fill
-              fillColor={mode === "article" ? t.raised : t.paper}
-              strokeColor={mode === "article" ? t.ink : t.rule}
-              strokeWidth={mode === "article" ? 1.8 : 1}
-              style={styles.tabButton}
+            <View
+              style={[styles.tabButton, { borderRadius: BUTTON_RADIUS, borderWidth: 1.5, backgroundColor: mode === "article" ? t.ink : t.raised, borderColor: mode === "article" ? t.ink : t.rule }]}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <DoodleIcon name="book" size={16} color={t.ink} />
-                <T v="heading" style={{ fontSize: 14 }}>{`Read (${articleCount})`}</T>
+                <DoodleIcon name="book" size={16} color={mode === "article" ? t.inverseInk : t.ink} />
+                <T v="heading" style={{ fontSize: 14, color: mode === "article" ? t.inverseInk : t.ink }}>{`Read (${articleCount})`}</T>
               </View>
-            </Frame>
+            </View>
           </Pressable>
         </View>
 
         {/* Search Input */}
         <Field
           value={searchQuery}
+          maxLength={80}
           onChangeText={setSearchQuery}
-          placeholder={`Search ${mode === "video" ? "videos" : "articles"} by title, creator, or topic...`}
+          placeholder={`Search ${mode === "video" ? "videos" : "articles"}`}
           accessibilityLabel="Search library"
         />
+
+        {/* Language filter */}
+        <View style={{ flexDirection: "row" }}>
+          <Chip
+            id="lang-hindi"
+            label={hindiOnly ? "हिंदी / Hinglish ✓" : "हिंदी / Hinglish"}
+            selected={hindiOnly}
+            role="checkbox"
+            onPress={() => setHindiOnly((v) => !v)}
+          />
+        </View>
 
         {/* Horizontal Topic Filter */}
         <ScrollView
@@ -135,36 +143,15 @@ export default function LibraryScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 6 }}
         >
-          {topics.map((item) => {
-            const active = selectedTopic === item.value;
-            return (
-              <Pressable
-                key={item.value}
-                onPress={() => setSelectedTopic(item.value)}
-                style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
-              >
-                <Frame
-                  id={`topic-${item.value}`}
-                  fill
-                  fillColor={active ? t.raised : t.paper}
-                  strokeColor={active ? t.ink : t.rule}
-                  strokeWidth={active ? 1.5 : 1}
-                  style={styles.topicChip}
-                >
-                  <T
-                    v="small"
-                    style={{
-                      color: t.ink,
-                      fontWeight: active ? "600" : "400",
-                      fontSize: 12,
-                    }}
-                  >
-                    {item.label}
-                  </T>
-                </Frame>
-              </Pressable>
-            );
-          })}
+          {topics.map((item) => (
+            <Chip
+              key={item.value}
+              id={`topic-${item.value}`}
+              label={item.label}
+              selected={selectedTopic === item.value}
+              onPress={() => setSelectedTopic(item.value)}
+            />
+          ))}
         </ScrollView>
 
         {/* Resources Count */}
@@ -172,11 +159,14 @@ export default function LibraryScreen() {
           <T v="small" soft>
             {`Showing ${filteredResources.length} ${mode === "video" ? "videos" : "articles"}`}
           </T>
-          {searchQuery.trim().length > 0 || selectedTopic !== "all" ? (
+          {searchQuery.trim().length > 0 || selectedTopic !== "all" || hindiOnly ? (
             <Pressable
+              accessibilityRole="button"
+              hitSlop={12}
               onPress={() => {
                 setSearchQuery("");
                 setSelectedTopic("all");
+                setHindiOnly(false);
               }}
             >
               <T v="small" style={{ color: t.ink, textDecorationLine: "underline" }}>
@@ -267,7 +257,7 @@ export default function LibraryScreen() {
                         </View>
                         <View style={[styles.badge, { borderColor: t.rule }]}>
                           <T v="small" soft style={{ fontSize: 10 }}>
-                            {r.language === "hi" ? "HINDI" : "ENGLISH"}
+                            {r.language === "hi" ? "HINDI" : r.language === "hinglish" ? "HINGLISH" : "ENGLISH"}
                           </T>
                         </View>
                         <View style={[styles.badge, { borderColor: t.rule }]}>
@@ -323,7 +313,7 @@ export default function LibraryScreen() {
                         </View>
                         <View style={[styles.badge, { borderColor: t.rule }]}>
                           <T v="small" soft style={{ fontSize: 10 }}>
-                            {r.language === "hi" ? "HINDI" : "ENGLISH"}
+                            {r.language === "hi" ? "HINDI" : r.language === "hinglish" ? "HINGLISH" : "ENGLISH"}
                           </T>
                         </View>
                         {r.minutes ? (

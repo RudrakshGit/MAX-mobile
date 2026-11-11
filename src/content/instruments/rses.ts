@@ -14,13 +14,13 @@ export const rses: Instrument = {
     "CBT practices for self-compassion and validation",
   ],
   options: [
-    { label: "Strongly disagree", value: 0 },
-    { label: "Disagree", value: 1 },
-    { label: "Agree", value: 2 },
     { label: "Strongly agree", value: 3 },
+    { label: "Agree", value: 2 },
+    { label: "Disagree", value: 1 },
+    { label: "Strongly disagree", value: 0 },
   ],
   items: [
-    { id: "rses-1", text: "I feel that I am a person of worth, at least on an equal plane with others." },
+    { id: "rses-1", text: "I feel that I'm a person of worth, at least on an equal plane with others." },
     { id: "rses-2", text: "I feel that I have a number of good qualities." },
     { id: "rses-3", text: "All in all, I am inclined to feel that I am a failure.", reverse: true },
     { id: "rses-4", text: "I am able to do things as well as most other people." },
@@ -32,12 +32,9 @@ export const rses: Instrument = {
     { id: "rses-10", text: "At times I think I am no good at all.", reverse: true },
   ],
   scoring: { kind: "sum" },
-  bands: [
-    { min: 0, label: "Low self-esteem", note: "Score < 15; suggests low self-esteem; self-compassion and reframing can help." },
-    { min: 15, label: "Healthy self-esteem", note: "Score 15–25; normal, balanced self-esteem." },
-    { min: 26, label: "High self-esteem", note: "Score 26–30; strong sense of self-worth and confidence." },
-  ],
+  // The scale's owner (UMD sociology FAQ): "There are no discrete cut-off points to delineate high and low self-esteem."
+  bands: [],
   source: "Rosenberg (1965), Society and the Adolescent Self-Image. Princeton University Press.",
-  licence: "Public domain (UMD Department of Sociology).",
+  licence: "Free to use for research and education per the University of Maryland sociology department page; no formal licence is published.",
   scienceUrl: "https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale",
 };

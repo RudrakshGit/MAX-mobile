@@ -18,6 +18,12 @@ const fresh = (): State => ({
   values: [],
   consents: { ai: false, voice: false, sync: false },
   musicRecent: [],
+  myMusic: [],
+  musicApps: [],
+  tombstones: [],
+  helped: [],
+  exams: [],
+  reminders: { mode: "off", exams: true },
   simpleFont: false,
   themePreference: "system",
   results: [],
@@ -153,4 +159,62 @@ test("results handles parts, top, incomplete and validates instrument IDs", () =
   // phq9 incomplete is preserved
   assert.equal(s.results[2].checkup, "phq9");
   assert.equal(s.results[2].incomplete, true);
+});
+
+test("safety plan call contact: kept only when both name and a dialable number are present", () => {
+  const plan = { warningSigns: "", coping: "", people: "", places: "", professionals: "", reasons: "" };
+  const keep = sanitize({ ...fresh(), safetyPlan: { ...plan, callName: "Didi", callPhone: "+91 98765 43210" } } as unknown, fresh);
+  assert.equal(keep.safetyPlan?.callName, "Didi");
+  assert.equal(keep.safetyPlan?.callPhone, "+91 98765 43210");
+  const badPhone = sanitize({ ...fresh(), safetyPlan: { ...plan, callName: "Didi", callPhone: "call me" } } as unknown, fresh);
+  assert.equal(badPhone.safetyPlan?.callPhone, undefined);
+  const noName = sanitize({ ...fresh(), safetyPlan: { ...plan, callPhone: "9876543210" } } as unknown, fresh);
+  assert.equal(noName.safetyPlan?.callName, undefined);
+});
+
+test("phone days keep screen-on, pickups and the method version; nonsense values are dropped", () => {
+  const s = sanitize(
+    {
+      ...fresh(),
+      phoneDays: [
+        { date: "2026-11-02", minutes: { social: 40 }, screenOn: 300, pickups: 52, v: 2 },
+        { date: "2026-11-01", minutes: { social: 3800 }, screenOn: 99999, pickups: -3 },
+      ],
+    } as unknown,
+    fresh,
+  );
+  assert.deepEqual(s.phoneDays[1], { date: "2026-11-02", minutes: { social: 40 }, screenOn: 300, pickups: 52, v: 2 });
+  assert.equal(s.phoneDays[0].screenOn, undefined);
+  assert.equal(s.phoneDays[0].v, undefined);
+});
+
+test("my music: https links and MAX's own music files are kept; anything else is dropped", () => {
+  const s = sanitize(
+    {
+      ...fresh(),
+      myMusic: [
+        { id: "a", kind: "link", title: "Lo-fi", url: "https://open.spotify.com/playlist/x", platform: "spotify", need: "focus", addedAt: 1 },
+        { id: "b", kind: "file", title: "My song", uri: "file:///data/user/0/com.eg18.max/files/music/b.mp3", addedAt: 2 },
+        { id: "c", kind: "link", title: "Bad", url: "javascript:alert(1)", addedAt: 3 },
+        { id: "d", kind: "file", title: "Outside", uri: "file:///sdcard/Download/x.mp3", addedAt: 4 },
+        { id: "e", kind: "link", title: "", url: "https://x.y", addedAt: 5 },
+      ],
+      musicApps: ["spotify", "napster", "spotify"],
+    } as unknown,
+    fresh,
+  );
+  assert.deepEqual(s.myMusic.map((t) => t.id), ["a", "b"]);
+  assert.equal(s.myMusic[0].need, "focus");
+  assert.deepEqual(s.musicApps, ["spotify"]);
+});
+
+test("reminders: an older backup keeps its fixed time; one without reminders starts off", () => {
+  const old = (o: object) => {
+    const raw: Record<string, unknown> = { ...fresh(), ...o };
+    delete raw.reminders;
+    return sanitize(raw, fresh).reminders;
+  };
+  assert.deepEqual(old({ remindAt: "21:00" }), { mode: "fixed", exams: true, asked: true });
+  assert.deepEqual(old({}), { mode: "off", exams: true });
+  assert.deepEqual(sanitize({ ...fresh(), reminders: { mode: "loud", exams: "yes", asked: true } } as unknown, fresh).reminders, { mode: "off", exams: true, asked: true });
 });

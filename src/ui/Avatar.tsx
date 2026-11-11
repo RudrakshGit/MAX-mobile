@@ -17,7 +17,8 @@ export function Avatar({ id, size = 44, style }: AvatarProps) {
   const userAvatar = useStore((s) => s.avatar);
 
   const effectiveId = (id || userAvatar || defaultAvatarFor(anonId)) as AvatarId;
-  const xml = getAvatarXml(effectiveId, t.ink, t.paper);
+  // like MAX, an avatar keeps its light-theme ink and paper in dark mode: a paper cut-out, never inverted (owner)
+  const xml = getAvatarXml(effectiveId, t.characterInk, t.characterPaper);
 
   return (
     <View
@@ -29,7 +30,7 @@ export function Avatar({ id, size = 44, style }: AvatarProps) {
           overflow: "hidden",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: t.paper,
+          backgroundColor: t.characterPaper,
         },
         style,
       ]}>

@@ -91,7 +91,7 @@ test("high PSWQ anxiety band prioritises anxiety", () => {
   const s: State = {
     ...baseState,
     results: [
-      { checkup: "pswq", score: 65, band: "High worry", at: Date.now() },
+      { checkup: "pswq", score: 65, at: Date.now() },
     ],
   };
   const needs = musicNeeds(s, noon);
@@ -105,7 +105,7 @@ test("positive ASRS result adds focus", () => {
   const s: State = {
     ...baseState,
     results: [
-      { checkup: "asrs", score: 5, band: "Positive screening", flag: true, at: Date.now() },
+      { checkup: "asrs6", score: 5, band: "May be consistent with adult ADHD", at: Date.now() },
     ],
   };
   const needs = musicNeeds(s, noon);

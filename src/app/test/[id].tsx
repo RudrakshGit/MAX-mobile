@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { byId, score } from "@/content/instruments";
@@ -8,6 +8,7 @@ import { Button, CrisisCard, Page, Screen, Section, T, openWebUrl } from "@/lib/
 import { DoodleIcon } from "@/ui/icons/DoodleIcon";
 import { Frame } from "@/ui/sketch/Frame";
 import { Max } from "@/components/max";
+import { BUTTON_RADIUS } from "@/ui/sketch/Button";
 
 export default function TestRunner() {
   const t = useTheme();
@@ -17,6 +18,8 @@ export default function TestRunner() {
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [result, setResult] = useState<Result>();
+  const lastTap = useRef(0);
+  const done = useRef(false);
 
   if (!instrument) {
     return (
@@ -28,6 +31,10 @@ export default function TestRunner() {
   }
 
   const handleAnswer = (val: number | null) => {
+    // a quick double tap must not also answer the next question (its options sit in the same place), or save twice
+    const now = Date.now();
+    if (done.current || now - lastTap.current < 350) return;
+    lastTap.current = now;
     const next = [...answers, val];
     if (next.length < instrument.items.length) {
       setAnswers(next);
@@ -47,6 +54,7 @@ export default function TestRunner() {
       flag: res.flag,
       incomplete: res.incomplete,
     };
+    done.current = true;
     update((st) => ({ results: [...st.results, r] }));
     setAnswers(next);
     setResult(r);
@@ -62,7 +70,7 @@ export default function TestRunner() {
   if (result) {
     return (
       <Screen title={instrument.short}>
-        <Stack.Screen options={{ title: instrument.title }} />
+        <Stack.Screen options={{ title: instrument.short }} />
         <View style={{ gap: space.lg }}>
           {/* Order invariant: CrisisCard first if crisisItem triggered */}
           {result.flag ? <CrisisCard /> : null}
@@ -70,11 +78,11 @@ export default function TestRunner() {
           {result.incomplete ? (
             <Frame id="incomplete-card" fill fillColor={t.raised} strokeColor={t.rule} style={{ gap: space.md, padding: space.md }}>
               <T v="title">Incomplete check-up</T>
-              <T soft>You skipped some questions, so we can't score this accurately. Want to finish it or retake?</T>
+              <T soft>You skipped some questions, so we can't score this accurately. Want to take it again?</T>
               <Button
                 label="Retake check-up"
                 onPress={() => {
-                  setAnswers([]);
+                  (done.current = false), setAnswers([]);
                   setResult(undefined);
                   setStarted(true);
                 }}
@@ -146,7 +154,7 @@ export default function TestRunner() {
   if (!started) {
     return (
       <Screen title={instrument.short}>
-        <Stack.Screen options={{ title: instrument.title }} />
+        <Stack.Screen options={{ title: instrument.short }} />
         <View style={{ gap: space.lg }}>
           <View style={{ gap: space.xs }}>
             <T v="title">{instrument.title}</T>
@@ -189,7 +197,7 @@ export default function TestRunner() {
 
   return (
     <Page>
-      <Stack.Screen options={{ title: `${instrument.short} (${currentIdx + 1}/${instrument.items.length})` }} />
+      <Stack.Screen options={{ title: `${currentIdx + 1} of ${instrument.items.length}` }} />
       <View style={{ gap: space.lg }}>
         {/* Progress line */}
         <View style={{ height: 4, borderRadius: 2, backgroundColor: t.rule, overflow: "hidden" }}>
@@ -205,6 +213,10 @@ export default function TestRunner() {
         <T v="small" soft>{`Question ${currentIdx + 1} of ${instrument.items.length}`}</T>
         <T v="title">{currentItem.text}</T>
 
+        {currentItem.shade ? (
+          <T v="small" soft>Shaded answers are the ones this screener counts, as on the official form.</T>
+        ) : null}
+
         {/* Options list */}
         <View style={{ gap: space.sm }}>
           {itemOptions.map((o) => (
@@ -215,18 +227,19 @@ export default function TestRunner() {
               style={({ pressed }) => ({
                 opacity: pressed ? 0.75 : 1,
               })}>
-              <Frame
-                id={`opt-${o.value}-${o.label}`}
-                fill
-                fillColor={t.paper}
-                strokeColor={t.rule}
+              {/* answers are buttons, so plain boxes like every button (owner, 11 Nov 2026) */}
+              <View
                 style={{
                   minHeight: 52,
                   justifyContent: "center",
                   paddingHorizontal: space.md,
+                  borderRadius: BUTTON_RADIUS,
+                  borderWidth: 1.5,
+                  borderColor: t.rule,
+                  backgroundColor: currentItem.shade?.includes(o.value) ? t.hair : t.raised,
                 }}>
                 <T>{o.label}</T>
-              </Frame>
+              </View>
             </Pressable>
           ))}
         </View>
